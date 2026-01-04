@@ -2,13 +2,14 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 12px;
-  gap: 12px;
+  padding: 12px 12px 8px;
+  gap: 10px;
   background: linear-gradient(
     180deg,
     rgba(28, 30, 45, 0.95) 0%,
     rgba(20, 22, 34, 0.95) 100%
   );
+  animation: claude-panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .claude-code-header {
@@ -35,9 +36,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 10px 0 6px;
-  border-top: 1px solid rgba(130, 135, 180, 0.2);
-  margin-bottom: 8px;
+  padding: 10px 10px 8px;
+  border: 1px solid rgba(130, 135, 180, 0.22);
+  border-radius: 12px;
+  background: rgba(18, 20, 30, 0.75);
+  box-shadow: 0 10px 24px rgba(8, 10, 18, 0.4);
+  margin: -4px 0 4px;
+  animation: claude-float-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .claude-code-top-row {
@@ -55,6 +60,7 @@
   flex-direction: column;
   gap: 6px;
   box-shadow: 0 8px 24px rgba(10, 12, 20, 0.3);
+  animation: claude-message-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .claude-code-message.is-user {
@@ -67,6 +73,16 @@
   background: rgba(100, 30, 35, 0.25);
 }
 
+.claude-code-message.is-pending {
+  border: 1px dashed rgba(130, 135, 180, 0.45);
+  background: rgba(60, 65, 95, 0.18);
+}
+
+.claude-code-message.is-pending .claude-code-content {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 .claude-code-role {
   font-size: 12px;
   text-transform: uppercase;
@@ -77,6 +93,25 @@
 .claude-code-content {
   font-size: 13px;
   line-height: 1.5;
+}
+
+.claude-code-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.claude-code-thinking-dots {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: claude-thinking-dots 1.2s steps(4, end) infinite;
+}
+
+.claude-code-thinking-dots::before {
+  content: "...";
 }
 
 .claude-code-empty {
@@ -101,18 +136,101 @@
 
 .claude-code-input {
   width: 100%;
-  min-height: 72px;
+  min-height: 78px;
   resize: vertical;
-  background: rgba(20, 22, 34, 0.8);
-  border: 1px solid rgba(130, 135, 180, 0.35);
-  border-radius: 10px;
-  padding: 10px 12px;
+  background: rgba(12, 14, 24, 0.92);
+  border: 1px solid rgba(130, 135, 180, 0.28);
+  border-radius: 12px;
+  padding: 12px 12px;
+  color: var(--text-normal);
+  box-shadow: inset 0 0 0 1px rgba(10, 12, 20, 0.2);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.claude-code-input:focus {
+  border-color: rgba(130, 160, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(110, 130, 220, 0.25);
+  outline: none;
 }
 
 .claude-code-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.claude-code-actions button {
+  border-radius: 999px;
+  padding: 6px 14px;
+  border: 1px solid rgba(120, 130, 170, 0.35);
+  background: rgba(28, 30, 45, 0.8);
+  color: var(--text-normal);
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.claude-code-actions button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(140, 160, 210, 0.5);
+}
+
+.claude-code-actions button.mod-cta {
+  background: rgba(74, 108, 210, 0.95);
+  border-color: rgba(90, 120, 230, 0.9);
+  color: #fff;
+}
+
+@keyframes claude-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes claude-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes claude-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes claude-thinking-dots {
+  from {
+    width: 0;
+  }
+  to {
+    width: 3ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claude-code-sidebar,
+  .claude-code-composer,
+  .claude-code-message {
+    animation: none;
+  }
+
+  .claude-code-thinking-dots {
+    animation: none;
+  }
 }
 
 .claude-code-message-actions {
@@ -122,4 +240,334 @@
 
 .claude-code-message-actions button {
   font-size: 12px;
+}
+
+/* Diff 容器 */
+.claude-code-diff-container {
+  margin-top: 12px;
+  border: 1px solid rgba(130, 135, 180, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(18, 20, 30, 0.85);
+  animation: claude-diff-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.claude-code-diff-hidden {
+  display: none;
+}
+
+/* Diff 头部 */
+.claude-code-diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(28, 30, 45, 0.9);
+  border-bottom: 1px solid rgba(130, 135, 180, 0.25);
+}
+
+.claude-code-diff-file {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.claude-code-diff-stats {
+  font-size: 12px;
+  font-family: monospace;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(40, 45, 65, 0.7);
+  color: var(--text-muted);
+}
+
+/* Diff 内容区域 */
+.claude-code-diff-content {
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Diff 行 */
+.claude-code-diff-line {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(130, 135, 180, 0.1);
+}
+
+.claude-code-diff-line:last-child {
+  border-bottom: none;
+}
+
+/* 添加的行 */
+.claude-code-diff-line.claude-code-diff-added {
+  background: rgba(74, 160, 100, 0.15);
+}
+
+.claude-code-diff-line.claude-code-diff-added .claude-code-diff-line-num {
+  background: rgba(74, 160, 100, 0.25);
+  color: rgba(120, 200, 140, 0.9);
+}
+
+.claude-code-diff-line.claude-code-diff-added .claude-code-diff-line-content {
+  color: rgba(140, 220, 160, 0.95);
+}
+
+/* 删除的行 */
+.claude-code-diff-line.claude-code-diff-removed {
+  background: rgba(220, 90, 90, 0.15);
+}
+
+.claude-code-diff-line.claude-code-diff-removed .claude-code-diff-line-num {
+  background: rgba(220, 90, 90, 0.25);
+  color: rgba(240, 120, 120, 0.9);
+}
+
+.claude-code-diff-line.claude-code-diff-removed .claude-code-diff-line-content {
+  color: rgba(250, 140, 140, 0.95);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* 未变更的行 */
+.claude-code-diff-line.claude-code-diff-unchanged {
+  background: rgba(60, 65, 95, 0.1);
+}
+
+.claude-code-diff-line.claude-code-diff-unchanged .claude-code-diff-line-num {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.claude-code-diff-line.claude-code-diff-unchanged .claude-code-diff-line-content {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* 行号 */
+.claude-code-diff-line-num {
+  flex-shrink: 0;
+  width: 60px;
+  padding: 6px 10px;
+  text-align: right;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  border-right: 1px solid rgba(130, 135, 180, 0.15);
+  user-select: none;
+}
+
+/* 行内容 */
+.claude-code-diff-line-content {
+  flex: 1;
+  padding: 6px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 动画 */
+@keyframes claude-diff-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条样式 */
+.claude-code-diff-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.claude-code-diff-content::-webkit-scrollbar-track {
+  background: rgba(18, 20, 30, 0.5);
+}
+
+.claude-code-diff-content::-webkit-scrollbar-thumb {
+  background: rgba(130, 135, 180, 0.3);
+  border-radius: 4px;
+}
+
+.claude-code-diff-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(130, 135, 180, 0.5);
+}
+
+/* ============ @ 文件相关样式 ============ */
+
+/* @ 标签容器 */
+.claude-code-mention-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 0;
+}
+
+.claude-code-mention-tags:not(.has-tags) {
+  display: none;
+}
+
+/* @ 标签样式 */
+.claude-code-mention-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  background: rgba(74, 108, 210, 0.2);
+  border: 1px solid rgba(74, 108, 210, 0.4);
+  color: rgba(120, 160, 230, 0.95);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 160ms ease, border-color 160ms ease;
+  animation: claude-tag-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.claude-code-mention-tag:hover {
+  background: rgba(74, 108, 210, 0.3);
+  border-color: rgba(74, 108, 210, 0.6);
+}
+
+.claude-code-mention-icon {
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.claude-code-mention-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claude-code-mention-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 140ms ease, background 140ms ease;
+}
+
+.claude-code-mention-remove:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* 文件选择弹窗 */
+.claude-code-file-picker {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 8px;
+  background: rgba(28, 30, 45, 0.98);
+  border: 1px solid rgba(130, 135, 180, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  z-index: 1000;
+  animation: claude-picker-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.claude-code-file-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid rgba(130, 135, 180, 0.2);
+  background: rgba(18, 20, 30, 0.9);
+  color: var(--text-normal);
+  font-size: 13px;
+  outline: none;
+}
+
+.claude-code-file-search::placeholder {
+  color: var(--text-muted);
+}
+
+.claude-code-file-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.claude-code-file-item {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.claude-code-file-item:hover {
+  background: rgba(60, 65, 95, 0.5);
+}
+
+.claude-code-file-item.claude-code-file-active {
+  background: rgba(74, 108, 210, 0.2);
+}
+
+.claude-code-file-item.claude-code-file-active:hover {
+  background: rgba(74, 108, 210, 0.3);
+}
+
+.claude-code-file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.claude-code-file-path {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* 拖拽状态 */
+.claude-code-input-dragover {
+  border-color: rgba(74, 108, 210, 0.7) !important;
+  background: rgba(74, 108, 210, 0.1) !important;
+}
+
+/* 动画 */
+@keyframes claude-tag-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes claude-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条 */
+.claude-code-file-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.claude-code-file-list::-webkit-scrollbar-track {
+  background: rgba(18, 20, 30, 0.5);
+}
+
+.claude-code-file-list::-webkit-scrollbar-thumb {
+  background: rgba(130, 135, 180, 0.3);
+  border-radius: 3px;
 }
