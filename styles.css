@@ -41,7 +41,7 @@
   border-radius: 12px;
   background: rgba(18, 20, 30, 0.75);
   box-shadow: 0 10px 24px rgba(8, 10, 18, 0.4);
-  margin: -4px 0 4px;
+  margin: -10px 0 16px;
   animation: claude-float-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -53,9 +53,14 @@
 }
 
 .claude-code-message {
-  background: var(--background-secondary);
-  border-radius: 8px;
-  padding: 10px 12px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 33, 50, 0.9) 0%,
+    rgba(22, 25, 38, 0.95) 100%
+  );
+  border-radius: 10px;
+  border: 1px solid rgba(120, 130, 180, 0.18);
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -64,8 +69,12 @@
 }
 
 .claude-code-message.is-user {
-  background: rgba(87, 94, 140, 0.2);
-  border: 1px solid rgba(110, 120, 180, 0.35);
+  background: linear-gradient(
+    180deg,
+    rgba(70, 78, 120, 0.25) 0%,
+    rgba(55, 60, 95, 0.3) 100%
+  );
+  border: 1px solid rgba(120, 140, 210, 0.35);
 }
 
 .claude-code-message.is-error {
@@ -100,6 +109,9 @@
   align-items: center;
   gap: 6px;
   color: var(--text-muted);
+  position: relative;
+  padding-bottom: 2px;
+  animation: claude-thinking-pulse 1.6s ease-in-out infinite;
 }
 
 .claude-code-thinking-dots {
@@ -112,6 +124,23 @@
 
 .claude-code-thinking-dots::before {
   content: "...";
+}
+
+.claude-code-thinking::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(120, 140, 220, 0),
+    rgba(120, 160, 255, 0.6),
+    rgba(120, 140, 220, 0)
+  );
+  opacity: 0.7;
+  animation: claude-thinking-bar 1.6s ease-in-out infinite;
 }
 
 .claude-code-empty {
@@ -221,6 +250,31 @@
   }
 }
 
+@keyframes claude-thinking-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes claude-thinking-bar {
+  0% {
+    transform: translateX(-8px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateX(8px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(-8px);
+    opacity: 0.2;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .claude-code-sidebar,
   .claude-code-composer,
@@ -231,15 +285,43 @@
   .claude-code-thinking-dots {
     animation: none;
   }
+
+  .claude-code-thinking {
+    animation: none;
+  }
+
+  .claude-code-thinking::after {
+    animation: none;
+  }
 }
 
 .claude-code-message-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 .claude-code-message-actions button {
   font-size: 12px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  border: 1px solid rgba(120, 130, 170, 0.3);
+  background: rgba(26, 28, 40, 0.8);
+  color: var(--text-normal);
+  transition: transform 140ms ease, border-color 140ms ease;
+}
+
+.claude-code-message-actions button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(140, 160, 210, 0.45);
+}
+
+.claude-code-message-actions button.mod-cta {
+  background: rgba(74, 108, 210, 0.95);
+  border-color: rgba(90, 120, 230, 0.9);
+  color: #fff;
 }
 
 /* Diff 容器 */
@@ -570,4 +652,154 @@
 .claude-code-file-list::-webkit-scrollbar-thumb {
   background: rgba(130, 135, 180, 0.3);
   border-radius: 3px;
+}
+
+/* ============ 话题控制区域样式 ============ */
+
+.claude-code-topic-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(130, 135, 180, 0.2);
+  margin-bottom: 8px;
+  animation: claude-topic-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 话题选择器容器 */
+.claude-code-topic-selector {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+
+/* 话题下拉框 */
+.claude-code-topic-select {
+  width: 100%;
+  padding: 9px 36px 9px 14px;
+  min-height: 38px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-normal);
+  background: rgba(28, 30, 45, 0.85);
+  border: 1px solid rgba(130, 135, 180, 0.35);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 160ms ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%239da3b8' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-color: rgba(28, 30, 45, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.claude-code-topic-select:hover {
+  border-color: rgba(140, 160, 210, 0.5);
+  background-color: rgba(32, 35, 50, 0.9);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23b4bdcc' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
+}
+
+.claude-code-topic-select:focus {
+  outline: none;
+  border-color: rgba(130, 160, 255, 0.55);
+  box-shadow: 0 0 0 2px rgba(110, 130, 220, 0.25);
+  background-color: rgba(32, 35, 50, 0.95);
+}
+
+/* 下拉选项样式 */
+.claude-code-topic-select option {
+  background: rgba(28, 30, 45, 0.98);
+  color: var(--text-normal);
+  padding: 8px 12px;
+  min-height: 36px;
+  border-bottom: 1px solid rgba(130, 135, 180, 0.1);
+}
+
+.claude-code-topic-select option:last-child {
+  border-bottom: none;
+}
+
+.claude-code-topic-select option:checked {
+  background: rgba(74, 108, 210, 0.3);
+  color: rgba(140, 170, 230, 0.95);
+  font-weight: 600;
+}
+
+.claude-code-topic-select option:hover {
+  background: rgba(60, 65, 95, 0.5);
+}
+
+/* 话题操作按钮组 */
+.claude-code-topic-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 话题按钮 */
+.claude-code-topic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(28, 30, 45, 0.85);
+  border: 1px solid rgba(130, 135, 180, 0.35);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 140ms ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.claude-code-topic-btn:hover {
+  color: var(--text-normal);
+  background: rgba(60, 65, 95, 0.6);
+  border-color: rgba(140, 160, 210, 0.5);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.claude-code-topic-new:hover {
+  color: rgba(120, 200, 140, 0.95);
+  background: rgba(74, 160, 100, 0.2);
+  border-color: rgba(74, 160, 100, 0.5);
+}
+
+.claude-code-topic-delete:hover {
+  color: rgba(240, 120, 120, 0.95);
+  background: rgba(220, 90, 90, 0.2);
+  border-color: rgba(220, 90, 90, 0.5);
+}
+
+.claude-code-topic-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 动画 */
+@keyframes claude-topic-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .claude-code-topic-control {
+    animation: none;
+  }
 }

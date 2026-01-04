@@ -39,10 +39,118 @@ var import_fs = __toESM(require("fs"), 1);
 var import_os = __toESM(require("os"), 1);
 var import_path = __toESM(require("path"), 1);
 var VIEW_TYPE_CLAUDE = "niki-ai-sidebar-view";
+var I18N = {
+  "zh-CN": {
+    openSidebarCommand: "\u6253\u5F00 Niki AI \u4FA7\u8FB9\u680F",
+    sidebarTitle: "Niki AI Sidebar",
+    includeCurrentNote: "\u5305\u542B\u5F53\u524D\u7B14\u8BB0",
+    send: "\u53D1\u9001",
+    clear: "\u6E05\u7A7A",
+    inputPlaceholder: "\u5411 Niki AI \u63D0\u95EE...",
+    emptyState: "\u5F00\u59CB\u548C Niki AI \u5BF9\u8BDD\u5427\u3002",
+    emptyResponse: "(\u65E0\u56DE\u590D)",
+    thinkingPending: "Niki \u6B63\u5728\u601D\u8003...",
+    thinkingInline: "Niki \u6B63\u5728\u601D\u8003",
+    failedRunCommand: "\u8FD0\u884C Claude \u547D\u4EE4\u5931\u8D25\u3002",
+    claudeConnectionError: "\u9519\u8BEF\uFF1A\u65E0\u6CD5\u8FDE\u63A5\u5230 Claude CLI\u3002\n\n\u8BF7\u68C0\u67E5\uFF1A\n1. Claude CLI \u662F\u5426\u5DF2\u6B63\u786E\u5B89\u88C5\uFF1A\n   npm install -g @anthropic-ai/claude-code\n2. \u547D\u4EE4\u662F\u5426\u5728\u7EC8\u7AEF\u4E2D\u53EF\u4EE5\u6B63\u5E38\u8FD0\u884C\n3. \u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u7684 Claude command \u914D\u7F6E\n\n\u8BE6\u7EC6\u9519\u8BEF\uFF1A{message}",
+    claudeNotFoundNotice: "\u672A\u627E\u5230 Claude CLI\u3002\u8BF7\u5728\u8BBE\u7F6E\u91CC\u586B\u5199 Claude command\uFF0C\u6216\u628A claude \u52A0\u5165 PATH\u3002",
+    claudeNotFoundReply: "\u672A\u627E\u5230 Claude CLI\u3002\u8BF7\u5728\u8BBE\u7F6E\u91CC\u586B\u5199 Claude command\uFF0C\u6216\u628A claude \u52A0\u5165 PATH\u3002",
+    noActiveNote: "\u5F53\u524D\u6CA1\u6709\u53EF\u63D2\u5165\u7684\u7B14\u8BB0\u3002",
+    insertedInto: "\u5DF2\u63D2\u5165\u5230 {path}",
+    addedFile: "\u5DF2\u6DFB\u52A0: {name}",
+    roleYou: "\u4F60",
+    roleNiki: "Niki",
+    viewChanges: "\u67E5\u770B\u53D8\u66F4",
+    changesApplied: "\u5DF2\u5E94\u7528\u53D8\u66F4",
+    changesAppliedTo: "\u5DF2\u5E94\u7528\u53D8\u66F4\u5230 {path}",
+    applyAllChanges: "\u5E94\u7528\u5168\u90E8\u53D8\u66F4",
+    insertToNote: "\u63D2\u5165\u5230\u7B14\u8BB0",
+    copy: "\u590D\u5236",
+    copied: "\u5DF2\u590D\u5236",
+    noTargetFile: "\u6CA1\u6709\u53EF\u5E94\u7528\u53D8\u66F4\u7684\u76EE\u6807\u6587\u4EF6\u3002",
+    failedApplyChanges: "\u5E94\u7528\u53D8\u66F4\u5931\u8D25\uFF1A{message}",
+    unknownError: "\u672A\u77E5\u9519\u8BEF",
+    searchFilesPlaceholder: "\u641C\u7D22\u6587\u4EF6...",
+    settingTitle: "Niki AI Sidebar",
+    settingClaudeCommandName: "Claude command",
+    settingClaudeCommandDesc: "\u7528\u4E8E\u8FD0\u884C Claude Code \u7684\u547D\u4EE4\u3002\u4F7F\u7528 {prompt} \u5185\u8054\u63D0\u793A\u8BCD\uFF0C\u6216\u7559\u7A7A\u4EE5\u901A\u8FC7 stdin \u53D1\u9001\u3002",
+    settingClaudeCommandPlaceholder: 'claude -p "{prompt}"',
+    settingDefaultPromptName: "Default prompt",
+    settingDefaultPromptDesc: "\u6BCF\u6B21\u8BF7\u6C42\u524D\u81EA\u52A8\u9644\u52A0\u7684\u7CFB\u7EDF\u63D0\u793A\u8BCD\u3002",
+    settingDefaultPromptPlaceholder: "\u4F60\u662F\u5D4C\u5165 Obsidian \u7684 Claude Code...",
+    settingWorkingDirName: "Working directory",
+    settingWorkingDirDesc: "Claude \u547D\u4EE4\u7684\u53EF\u9009\u5DE5\u4F5C\u76EE\u5F55\uFF0C\u9ED8\u8BA4\u4E3A vault \u8DEF\u5F84\u3002",
+    settingLanguageName: "Language",
+    settingLanguageDesc: "\u754C\u9762\u663E\u793A\u8BED\u8A00\u3002",
+    undoChanges: "\u64A4\u9500\u4FEE\u6539",
+    undoSuccess: "\u5DF2\u64A4\u9500 {path} \u7684\u4FEE\u6539",
+    undoFailed: "\u64A4\u9500\u5931\u8D25\uFF1A{message}"
+  },
+  "en-US": {
+    openSidebarCommand: "Open Niki AI Sidebar",
+    sidebarTitle: "Niki AI Sidebar",
+    includeCurrentNote: "Include current note",
+    send: "Send",
+    clear: "Clear",
+    inputPlaceholder: "Ask Niki AI...",
+    emptyState: "Start a conversation with Niki AI.",
+    emptyResponse: "(empty response)",
+    thinkingPending: "Niki is thinking...",
+    thinkingInline: "Niki is thinking",
+    failedRunCommand: "Failed to run Claude command.",
+    claudeConnectionError: "Error: Unable to connect to Claude CLI.\n\nPlease check:\n1. Claude CLI is installed:\n   npm install -g @anthropic-ai/claude-code\n2. Command works in terminal\n3. Claude command in settings\n\nDetails: {message}",
+    claudeNotFoundNotice: "Claude CLI not found. Configure Claude command or add claude to PATH.",
+    claudeNotFoundReply: "Claude CLI not found. Configure Claude command or add claude to PATH.",
+    noActiveNote: "No active note to insert into.",
+    insertedInto: "Inserted into {path}",
+    addedFile: "Added: {name}",
+    roleYou: "You",
+    roleNiki: "Niki",
+    viewChanges: "View changes",
+    changesApplied: "Changes applied",
+    changesAppliedTo: "Changes applied to {path}",
+    applyAllChanges: "Apply all changes",
+    insertToNote: "Insert to note",
+    copy: "Copy",
+    copied: "Copied",
+    noTargetFile: "No target file to apply changes to.",
+    failedApplyChanges: "Failed to apply changes: {message}",
+    unknownError: "Unknown error",
+    searchFilesPlaceholder: "Search files...",
+    settingTitle: "Niki AI Sidebar",
+    settingClaudeCommandName: "Claude command",
+    settingClaudeCommandDesc: "Command to run Claude Code. Use {prompt} to inline the prompt, or leave it out to send via stdin.",
+    settingClaudeCommandPlaceholder: 'claude -p "{prompt}"',
+    settingDefaultPromptName: "Default prompt",
+    settingDefaultPromptDesc: "Prepended to every request.",
+    settingDefaultPromptPlaceholder: "You are Claude Code embedded in Obsidian...",
+    settingWorkingDirName: "Working directory",
+    settingWorkingDirDesc: "Optional cwd for the Claude command. Defaults to vault path.",
+    settingLanguageName: "Language",
+    settingLanguageDesc: "Language for the UI.",
+    undoChanges: "Undo changes",
+    undoSuccess: "Undone changes to {path}",
+    undoFailed: "Undo failed: {message}"
+  }
+};
+function t(language, key) {
+  var _a, _b;
+  return (_b = ((_a = I18N[language]) != null ? _a : I18N["zh-CN"])[key]) != null ? _b : I18N["zh-CN"][key];
+}
+function format(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    var _a;
+    return (_a = vars[key]) != null ? _a : "";
+  });
+}
 var DEFAULT_SETTINGS = {
   claudeCommand: "",
   defaultPrompt: "You are Niki AI embedded in Obsidian (powered by Claude Code). Help me edit Markdown notes.\nWhen you propose changes, be explicit and keep the style consistent.",
-  workingDir: ""
+  workingDir: "",
+  language: "zh-CN",
+  includeCurrentNote: false,
+  topics: [],
+  currentTopicId: null
 };
 var ClaudeSidebarPlugin = class extends import_obsidian.Plugin {
   async onload() {
@@ -50,12 +158,12 @@ var ClaudeSidebarPlugin = class extends import_obsidian.Plugin {
     this.registerView(VIEW_TYPE_CLAUDE, (leaf) => {
       return new ClaudeSidebarView(leaf, this);
     });
-    this.addRibbonIcon("bot", "Open Niki AI Sidebar", () => {
+    this.addRibbonIcon("bot", this.t("openSidebarCommand"), () => {
       this.activateView();
     });
     this.addCommand({
       id: "open-niki-ai-sidebar",
-      name: "Open Niki AI Sidebar",
+      name: this.t("openSidebarCommand"),
       callback: () => this.activateView()
     });
     this.addSettingTab(new ClaudeSidebarSettingTab(this.app, this));
@@ -81,6 +189,12 @@ var ClaudeSidebarPlugin = class extends import_obsidian.Plugin {
   }
   async saveSettings() {
     await this.saveData(this.settings);
+  }
+  t(key) {
+    return t(this.settings.language, key);
+  }
+  tf(key, vars) {
+    return format(this.t(key), vars);
   }
 };
 var ClaudeSidebarView = class extends import_obsidian.ItemView {
@@ -109,6 +223,22 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
     container.addClass("claude-code-sidebar");
     const header = container.createDiv("claude-code-header");
     header.createDiv({ text: "Niki AI" }).addClass("claude-code-title");
+    const topicControl = container.createDiv("claude-code-topic-control");
+    const topicSelector = topicControl.createDiv("claude-code-topic-selector");
+    this.topicSelectEl = topicSelector.createEl("select", {
+      cls: "claude-code-topic-select"
+    });
+    const topicActions = topicControl.createDiv("claude-code-topic-actions");
+    this.newTopicBtn = topicActions.createEl("button", {
+      text: "+",
+      cls: "claude-code-topic-btn claude-code-topic-new"
+    });
+    this.newTopicBtn.setAttribute("aria-label", "\u65B0\u5EFA\u8BDD\u9898");
+    this.deleteTopicBtn = topicActions.createEl("button", {
+      text: "\xD7",
+      cls: "claude-code-topic-btn claude-code-topic-delete"
+    });
+    this.deleteTopicBtn.setAttribute("aria-label", "\u5220\u9664\u8BDD\u9898");
     this.messagesEl = container.createDiv("claude-code-messages");
     const composer = container.createDiv("claude-code-composer");
     this.mentionTagsEl = composer.createDiv("claude-code-mention-tags");
@@ -118,16 +248,17 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
     this.includeNoteEl = includeNoteWrap.createEl("input", {
       type: "checkbox"
     });
-    includeNoteWrap.createEl("span", { text: "Include current note" });
+    this.includeNoteEl.checked = this.plugin.settings.includeCurrentNote;
+    includeNoteWrap.createEl("span", { text: this.plugin.t("includeCurrentNote") });
     const actions = topRow.createDiv("claude-code-actions");
     const sendBtn = actions.createEl("button", {
-      text: "Send",
+      text: this.plugin.t("send"),
       cls: "mod-cta"
     });
-    const clearBtn = actions.createEl("button", { text: "Clear" });
+    const clearBtn = actions.createEl("button", { text: this.plugin.t("clear") });
     this.inputEl = composer.createEl("textarea", {
       cls: "claude-code-input",
-      attr: { placeholder: "Ask Niki AI..." }
+      attr: { placeholder: this.plugin.t("inputPlaceholder") }
     });
     this.inputEl.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
@@ -180,7 +311,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
             );
             if (file) {
               this.addMentionedFile(file);
-              new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${file.basename}`);
+              new import_obsidian.Notice(this.plugin.tf("addedFile", { name: file.basename }));
               return;
             } else {
               const tempFile = {
@@ -190,7 +321,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
                 stat: { mtime: Date.now(), ctime: Date.now(), size: 0 }
               };
               this.addMentionedFile(tempFile);
-              new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${tempFile.basename}`);
+              new import_obsidian.Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
               return;
             }
           }
@@ -211,7 +342,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
           );
           if (vaultFile) {
             this.addMentionedFile(vaultFile);
-            new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${vaultFile.basename}`);
+            new import_obsidian.Notice(this.plugin.tf("addedFile", { name: vaultFile.basename }));
           } else {
             const tempFile = {
               path: filePath,
@@ -220,17 +351,44 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
               stat: { mtime: Date.now(), ctime: Date.now(), size: 0 }
             };
             this.addMentionedFile(tempFile);
-            new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${tempFile.basename}`);
+            new import_obsidian.Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
           }
         }
       }
     });
+    this.includeNoteEl.addEventListener("change", async () => {
+      this.plugin.settings.includeCurrentNote = this.includeNoteEl.checked;
+      await this.plugin.saveSettings();
+    });
     sendBtn.addEventListener("click", () => this.handleSend());
     clearBtn.addEventListener("click", () => this.clearChat());
+    this.topicSelectEl.addEventListener("change", async (e) => {
+      const target = e.target;
+      await this.switchTopic(target.value);
+    });
+    this.newTopicBtn.addEventListener("click", async () => {
+      await this.createTopic();
+    });
+    this.deleteTopicBtn.addEventListener("click", async () => {
+      await this.deleteTopic();
+    });
+    if (this.plugin.settings.topics.length === 0) {
+      await this.createTopic();
+    } else {
+      const currentTopicId = this.plugin.settings.currentTopicId;
+      if (currentTopicId) {
+        const topic = this.plugin.settings.topics.find((t2) => t2.id === currentTopicId);
+        if (topic) {
+          this.messages = [...topic.messages];
+        }
+      }
+    }
+    this.renderTopicSelector();
     this.loaded = true;
     this.renderMessages();
   }
   async onClose() {
+    await this.saveCurrentTopic();
     this.loaded = false;
   }
   async handleSend() {
@@ -246,12 +404,33 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
 
 ${content}`;
     }
-    this.addMessage({ role: "user", content: messageContent });
-    this.clearMentionTags();
+    this.addMessage({
+      role: "user",
+      content: messageContent,
+      originalInput: content
+      // 保存原始输入，用于生成话题标题
+    });
+    await this.updateTopicTitle();
+    const filesToTrack = [...this.mentionedFiles];
+    if (this.includeNoteEl.checked) {
+      const activeFile = this.getActiveFile();
+      if (activeFile && !filesToTrack.some((f) => f.path === activeFile.path)) {
+        filesToTrack.push(activeFile);
+      }
+    }
+    const beforeTimestamp = Date.now();
+    const fileSnapshots = /* @__PURE__ */ new Map();
+    for (const file of filesToTrack) {
+      try {
+        fileSnapshots.set(file.path, await this.app.vault.read(file));
+      } catch (e) {
+      }
+    }
     const prompt = await this.buildPrompt(content);
+    this.clearMentionTags();
     const pendingMessage = {
       role: "assistant",
-      content: "Niki \u6B63\u5728\u601D\u8003...",
+      content: this.plugin.t("thinkingPending"),
       isPending: true
     };
     this.messages.push(pendingMessage);
@@ -260,32 +439,56 @@ ${content}`;
     try {
       const reply = await this.runClaudeCommand(prompt);
       if (!reply || reply.trim() === "") {
-        pendingMessage.content = "(empty response)";
+        pendingMessage.content = this.plugin.t("emptyResponse");
         pendingMessage.isError = true;
       } else {
         pendingMessage.content = reply.trim();
       }
       pendingMessage.isPending = false;
+      const modifications = [];
+      for (const file of filesToTrack) {
+        const beforeContent = fileSnapshots.get(file.path);
+        if (!beforeContent)
+          continue;
+        try {
+          const afterContent = await this.app.vault.read(file);
+          console.log(`\u68C0\u67E5\u6587\u4EF6 ${file.path}:`, {
+            beforeLength: beforeContent.length,
+            afterLength: afterContent.length,
+            changed: afterContent !== beforeContent
+          });
+          if (afterContent !== beforeContent) {
+            modifications.push({
+              filePath: file.path,
+              originalContent: beforeContent,
+              file,
+              timestamp: beforeTimestamp
+            });
+          }
+        } catch (e) {
+          console.error(`\u8BFB\u53D6\u6587\u4EF6 ${file.path} \u5931\u8D25:`, e);
+        }
+      }
+      console.log(`\u68C0\u6D4B\u5230 ${modifications.length} \u4E2A\u6587\u4EF6\u88AB\u4FEE\u6539`);
+      if (modifications.length > 0) {
+        pendingMessage.fileModifications = modifications;
+      }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to run Claude command.";
-      pendingMessage.content = `\u9519\u8BEF\uFF1A\u65E0\u6CD5\u8FDE\u63A5\u5230 Claude CLI\u3002
-
-\u8BF7\u68C0\u67E5\uFF1A
-1. Claude CLI \u662F\u5426\u5DF2\u6B63\u786E\u5B89\u88C5\uFF1A
-   npm install -g @anthropic-ai/claude-code
-2. \u547D\u4EE4\u662F\u5426\u5728\u7EC8\u7AEF\u4E2D\u53EF\u4EE5\u6B63\u5E38\u8FD0\u884C
-3. \u63D2\u4EF6\u8BBE\u7F6E\u4E2D\u7684 Claude command \u914D\u7F6E
-
-\u8BE6\u7EC6\u9519\u8BEF\uFF1A${message}`;
+      const message = error instanceof Error ? error.message : this.plugin.t("failedRunCommand");
+      pendingMessage.content = this.plugin.tf("claudeConnectionError", {
+        message
+      });
       pendingMessage.isError = true;
       pendingMessage.isPending = false;
     }
     this.renderMessages();
     this.scrollToBottom();
+    await this.saveCurrentTopic();
   }
   clearChat() {
     this.messages = [];
     this.renderMessages();
+    void this.saveCurrentTopic();
   }
   addMessage(message) {
     this.messages.push(message);
@@ -387,10 +590,10 @@ ${userInput}`);
       });
     }
     new import_obsidian.Notice(
-      "\u672A\u627E\u5230 Claude CLI\u3002\u8BF7\u5728\u8BBE\u7F6E\u91CC\u586B\u5199 Claude command\uFF0C\u6216\u628A claude \u52A0\u5165 PATH\u3002"
+      this.plugin.t("claudeNotFoundNotice")
     );
     return Promise.resolve(
-      "Claude CLI not found. Configure Claude command or add claude to PATH."
+      this.plugin.t("claudeNotFoundReply")
     );
   }
   getActiveFile() {
@@ -408,7 +611,7 @@ ${userInput}`);
   async insertIntoActiveFile(content) {
     const file = this.getActiveFile();
     if (!file) {
-      new import_obsidian.Notice("No active note to insert into.");
+      new import_obsidian.Notice(this.plugin.t("noActiveNote"));
       return;
     }
     const existing = await this.app.vault.read(file);
@@ -416,7 +619,22 @@ ${userInput}`);
 
 ${content.trim()}
 `);
-    new import_obsidian.Notice(`Inserted into ${file.path}`);
+    new import_obsidian.Notice(this.plugin.tf("insertedInto", { path: file.path }));
+  }
+  async copyToClipboard(content) {
+    var _a;
+    if ((_a = navigator == null ? void 0 : navigator.clipboard) == null ? void 0 : _a.writeText) {
+      await navigator.clipboard.writeText(content);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = content;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
   }
   async renderMessages() {
     if (!this.loaded) {
@@ -425,7 +643,7 @@ ${content.trim()}
     this.messagesEl.empty();
     if (this.messages.length === 0) {
       this.messagesEl.createDiv({
-        text: "Start a conversation with Niki AI.",
+        text: this.plugin.t("emptyState"),
         cls: "claude-code-empty"
       });
       return;
@@ -440,13 +658,13 @@ ${content.trim()}
         wrapper.addClass("is-pending");
       }
       const roleEl = wrapper.createDiv({
-        text: message.role === "user" ? "You" : "Niki",
+        text: message.role === "user" ? this.plugin.t("roleYou") : this.plugin.t("roleNiki"),
         cls: "claude-code-role"
       });
       const contentEl = wrapper.createDiv("claude-code-content");
       if (message.isPending) {
         const thinking = contentEl.createSpan("claude-code-thinking");
-        thinking.createSpan({ text: "Niki \u6B63\u5728\u601D\u8003" });
+        thinking.createSpan({ text: this.plugin.t("thinkingInline") });
         thinking.createSpan({ cls: "claude-code-thinking-dots" });
       } else {
         try {
@@ -462,14 +680,30 @@ ${content.trim()}
           contentEl.createEl("pre", { text: message.content });
         }
       }
+      const actions = wrapper.createDiv("claude-code-message-actions");
+      const copyBtn = actions.createEl("button", {
+        text: this.plugin.t("copy")
+      });
+      copyBtn.addEventListener("click", async () => {
+        await this.copyToClipboard(message.content);
+        new import_obsidian.Notice(this.plugin.t("copied"));
+      });
       if (message.role === "assistant" && !message.isError && !message.isPending) {
-        const actions = wrapper.createDiv("claude-code-message-actions");
+        if (message.fileModifications && message.fileModifications.length > 0) {
+          const undoBtn = actions.createEl("button", {
+            text: this.plugin.t("undoChanges"),
+            cls: "claude-code-undo-btn"
+          });
+          undoBtn.addEventListener("click", async () => {
+            await this.undoFileModifications(message);
+          });
+        }
         if (!message.codeChanges) {
           message.codeChanges = await this.parseCodeChanges(message);
         }
         if (message.codeChanges.length > 0) {
           const viewChangesBtn = actions.createEl("button", {
-            text: message.codeChanges.some((c) => c.applied) ? "Changes applied" : "View changes"
+            text: message.codeChanges.some((c) => c.applied) ? this.plugin.t("changesApplied") : this.plugin.t("viewChanges")
           });
           viewChangesBtn.addEventListener(
             "click",
@@ -478,7 +712,7 @@ ${content.trim()}
           const hasUnapplied = message.codeChanges.some((c) => !c.applied);
           if (hasUnapplied) {
             const applyBtn = actions.createEl("button", {
-              text: "Apply all changes",
+              text: this.plugin.t("applyAllChanges"),
               cls: "mod-cta"
             });
             applyBtn.addEventListener(
@@ -486,9 +720,9 @@ ${content.trim()}
               () => this.applyAllChanges(message)
             );
           }
-        } else {
+        } else if (!message.fileModifications || message.fileModifications.length === 0) {
           const insertBtn = actions.createEl("button", {
-            text: "Insert to note"
+            text: this.plugin.t("insertToNote")
           });
           insertBtn.addEventListener(
             "click",
@@ -501,6 +735,39 @@ ${content.trim()}
   scrollToBottom() {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
   }
+  // 根据内容查找最匹配的文件
+  findBestMatchingFile(content) {
+    const allFiles = this.app.vault.getMarkdownFiles();
+    const contentLines = content.trim().split("\n").slice(0, 50);
+    let bestMatch = null;
+    let bestScore = 0;
+    for (const file of allFiles) {
+      try {
+        const fileContent = this.app.vault.cachedRead(file);
+        if (!fileContent)
+          continue;
+        const fileLines = fileContent.split("\n").slice(0, 50);
+        let matchCount = 0;
+        for (const line of contentLines) {
+          if (line.trim().length > 5) {
+            for (const fileLine of fileLines) {
+              if (fileLine.trim() === line.trim()) {
+                matchCount++;
+                break;
+              }
+            }
+          }
+        }
+        const score = matchCount / Math.max(contentLines.filter((l) => l.trim().length > 5).length, 1);
+        if (score > bestScore && score > 0.3) {
+          bestScore = score;
+          bestMatch = file;
+        }
+      } catch (e) {
+      }
+    }
+    return bestMatch;
+  }
   // 解析代码块变更
   async parseCodeChanges(message) {
     const codeChanges = [];
@@ -509,28 +776,33 @@ ${content.trim()}
     let blockIndex = 0;
     while ((match = codeBlockRegex.exec(message.content)) !== null) {
       const [, language, content] = match;
-      const activeFile = this.getActiveFile();
-      if (!activeFile)
+      const targetFile = this.findBestMatchingFile(content);
+      if (!targetFile)
         continue;
-      const originalContent = await this.app.vault.cachedRead(activeFile);
+      const originalContent = await this.app.vault.cachedRead(targetFile);
       codeChanges.push({
         language,
         originalContent,
         newContent: content.trim(),
-        blockIndex: blockIndex++
+        blockIndex: blockIndex++,
+        targetFile
       });
     }
     return codeChanges;
   }
   // 渲染 diff 视图
-  renderDiffView(container, diff) {
-    var _a;
+  renderDiffView(container, diff, targetFile) {
     const diffContainer = container.createDiv("claude-code-diff-container");
     const header = diffContainer.createDiv("claude-code-diff-header");
-    header.createSpan({
-      text: `Changes for ${((_a = this.getActiveFile()) == null ? void 0 : _a.path) || "current file"}`,
+    const fileLink = header.createEl("a", {
+      text: targetFile.path,
       cls: "claude-code-diff-file"
     });
+    fileLink.addEventListener("click", () => {
+      this.app.workspace.openLinkText(targetFile.path, "", true);
+    });
+    fileLink.style.cursor = "pointer";
+    fileLink.style.textDecoration = "underline";
     const stats = this.computeDiffStats(diff);
     header.createSpan({
       text: `+${stats.added} -${stats.removed}`,
@@ -572,24 +844,26 @@ ${content.trim()}
     if (!message.codeChanges || message.codeChanges.length === 0)
       return;
     const codeChange = message.codeChanges[0];
+    if (!codeChange.targetFile)
+      return;
     const diff = computeDiff(codeChange.originalContent, codeChange.newContent);
-    this.renderDiffView(wrapper, diff);
+    this.renderDiffView(wrapper, diff, codeChange.targetFile);
   }
   // 应用代码变更
   async applyCodeChanges(codeChange) {
-    const file = this.getActiveFile();
+    const file = codeChange.targetFile;
     if (!file) {
-      new import_obsidian.Notice("No active file to apply changes to.");
+      new import_obsidian.Notice(this.plugin.t("noTargetFile"));
       return;
     }
     try {
       await this.app.vault.modify(file, codeChange.newContent);
       codeChange.applied = true;
-      new import_obsidian.Notice(`Changes applied to ${file.path}`);
+      new import_obsidian.Notice(this.plugin.tf("changesAppliedTo", { path: file.path }));
       this.renderMessages();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      new import_obsidian.Notice(`Failed to apply changes: ${message}`);
+      const message = error instanceof Error ? error.message : this.plugin.t("unknownError");
+      new import_obsidian.Notice(this.plugin.tf("failedApplyChanges", { message }));
     }
   }
   async applyAllChanges(message) {
@@ -600,6 +874,23 @@ ${content.trim()}
         await this.applyCodeChanges(codeChange);
       }
     }
+  }
+  // 撤销文件修改
+  async undoFileModifications(message) {
+    if (!message.fileModifications || message.fileModifications.length === 0) {
+      return;
+    }
+    for (const mod of message.fileModifications) {
+      try {
+        await this.app.vault.modify(mod.file, mod.originalContent);
+        new import_obsidian.Notice(this.plugin.tf("undoSuccess", { path: mod.filePath }));
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : this.plugin.t("unknownError");
+        new import_obsidian.Notice(this.plugin.tf("undoFailed", { message: errorMsg }));
+      }
+    }
+    message.fileModifications = [];
+    this.renderMessages();
   }
   // ============ @ 文件相关方法 ============
   // 显示文件选择弹窗
@@ -612,7 +903,7 @@ ${content.trim()}
     const activeFile = this.getActiveFile();
     const searchInput = this.filePickerEl.createEl("input", {
       type: "text",
-      placeholder: "\u641C\u7D22\u6587\u4EF6...",
+      placeholder: this.plugin.t("searchFilesPlaceholder"),
       cls: "claude-code-file-search"
     });
     const fileList = this.filePickerEl.createDiv("claude-code-file-list");
@@ -693,6 +984,142 @@ ${content.trim()}
   clearMentionTags() {
     this.mentionedFiles = [];
     this.renderMentionTags();
+  }
+  // ============ 话题管理相关方法 ============
+  // 生成话题ID
+  generateTopicId() {
+    return `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+  // 创建新话题
+  async createTopic() {
+    if (this.plugin.settings.currentTopicId) {
+      const currentTopic = this.plugin.settings.topics.find(
+        (t2) => t2.id === this.plugin.settings.currentTopicId
+      );
+      if (currentTopic) {
+        currentTopic.messages = [...this.messages];
+        currentTopic.updatedAt = Date.now();
+      }
+    }
+    const newTopic = {
+      id: this.generateTopicId(),
+      title: "\u65B0\u8BDD\u9898",
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    this.plugin.settings.topics.push(newTopic);
+    this.plugin.settings.currentTopicId = newTopic.id;
+    this.messages = [];
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+    this.scrollToBottom();
+  }
+  // 切换话题
+  async switchTopic(topicId) {
+    const topic = this.plugin.settings.topics.find((t2) => t2.id === topicId);
+    if (!topic)
+      return;
+    if (this.plugin.settings.currentTopicId) {
+      const currentTopic = this.plugin.settings.topics.find(
+        (t2) => t2.id === this.plugin.settings.currentTopicId
+      );
+      if (currentTopic) {
+        currentTopic.messages = [...this.messages];
+        currentTopic.updatedAt = Date.now();
+      }
+    }
+    this.plugin.settings.currentTopicId = topicId;
+    this.messages = [...topic.messages];
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+    this.scrollToBottom();
+  }
+  // 删除话题
+  async deleteTopic() {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId)
+      return;
+    const topicIndex = this.plugin.settings.topics.findIndex(
+      (t2) => t2.id === currentTopicId
+    );
+    if (topicIndex === -1)
+      return;
+    if (this.plugin.settings.topics.length <= 1) {
+      this.messages = [];
+      this.plugin.settings.topics[0].messages = [];
+      this.plugin.settings.topics[0].title = "\u65B0\u8BDD\u9898";
+      this.plugin.settings.topics[0].updatedAt = Date.now();
+      await this.plugin.saveSettings();
+      this.renderMessages();
+      this.renderTopicSelector();
+      return;
+    }
+    this.plugin.settings.topics.splice(topicIndex, 1);
+    const nextTopic = this.plugin.settings.topics[Math.max(0, topicIndex - 1)];
+    this.plugin.settings.currentTopicId = nextTopic.id;
+    this.messages = [...nextTopic.messages];
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+  }
+  // 自动生成话题标题
+  async generateTopicTitle(topic) {
+    const firstUserMessage = topic.messages.find((m) => m.role === "user");
+    if (!firstUserMessage) {
+      return "\u65B0\u8BDD\u9898";
+    }
+    const content = (firstUserMessage.originalInput || firstUserMessage.content).trim();
+    const title = content.length > 30 ? content.substring(0, 30) + "..." : content;
+    return title;
+  }
+  // 更新话题标题
+  async updateTopicTitle() {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId)
+      return;
+    const topic = this.plugin.settings.topics.find((t2) => t2.id === currentTopicId);
+    if (!topic)
+      return;
+    if (topic.title === "\u65B0\u8BDD\u9898") {
+      topic.title = await this.generateTopicTitle(topic);
+      await this.plugin.saveSettings();
+      this.renderTopicSelector();
+    }
+  }
+  // 保存当前话题
+  async saveCurrentTopic() {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId)
+      return;
+    const topic = this.plugin.settings.topics.find((t2) => t2.id === currentTopicId);
+    if (topic) {
+      topic.messages = [...this.messages];
+      topic.updatedAt = Date.now();
+      await this.plugin.saveSettings();
+    }
+  }
+  // 渲染话题选择器
+  renderTopicSelector() {
+    if (!this.topicSelectEl)
+      return;
+    this.topicSelectEl.empty();
+    const topics = this.plugin.settings.topics;
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    for (const topic of topics) {
+      const option = this.topicSelectEl.createEl("option", {
+        value: topic.id,
+        text: topic.title || "\u672A\u547D\u540D\u8BDD\u9898"
+      });
+      if (topic.id === currentTopicId) {
+        option.setAttribute("selected", "selected");
+      }
+    }
+    if (this.deleteTopicBtn) {
+      this.deleteTopicBtn.disabled = topics.length <= 1;
+    }
   }
 };
 function normalizeCommand(command) {
@@ -808,22 +1235,27 @@ var ClaudeSidebarSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Niki AI Sidebar" });
-    new import_obsidian.Setting(containerEl).setName("Claude command").setDesc(
-      "Command to run Claude Code. Use {prompt} to inline the prompt, or leave it out to send via stdin."
-    ).addText(
-      (text) => text.setPlaceholder('claude -p "{prompt}"').setValue(this.plugin.settings.claudeCommand).onChange(async (value) => {
+    containerEl.createEl("h2", { text: this.plugin.t("settingTitle") });
+    new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingLanguageName")).setDesc(this.plugin.t("settingLanguageDesc")).addDropdown(
+      (dropdown) => dropdown.addOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587").addOption("en-US", "English").setValue(this.plugin.settings.language).onChange(async (value) => {
+        this.plugin.settings.language = value;
+        await this.plugin.saveSettings();
+        this.display();
+      })
+    );
+    new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingClaudeCommandName")).setDesc(this.plugin.t("settingClaudeCommandDesc")).addText(
+      (text) => text.setPlaceholder(this.plugin.t("settingClaudeCommandPlaceholder")).setValue(this.plugin.settings.claudeCommand).onChange(async (value) => {
         this.plugin.settings.claudeCommand = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Default prompt").setDesc("Prepended to every request.").addTextArea(
-      (text) => text.setPlaceholder("You are Claude Code embedded in Obsidian...").setValue(this.plugin.settings.defaultPrompt).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingDefaultPromptName")).setDesc(this.plugin.t("settingDefaultPromptDesc")).addTextArea(
+      (text) => text.setPlaceholder(this.plugin.t("settingDefaultPromptPlaceholder")).setValue(this.plugin.settings.defaultPrompt).onChange(async (value) => {
         this.plugin.settings.defaultPrompt = value;
         await this.plugin.saveSettings();
       })
     );
-    new import_obsidian.Setting(containerEl).setName("Working directory").setDesc("Optional cwd for the Claude command. Defaults to vault path.").addText(
+    new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingWorkingDirName")).setDesc(this.plugin.t("settingWorkingDirDesc")).addText(
       (text) => text.setPlaceholder("/path/to/vault").setValue(this.plugin.settings.workingDir).onChange(async (value) => {
         this.plugin.settings.workingDir = value;
         await this.plugin.saveSettings();

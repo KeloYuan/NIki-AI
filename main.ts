@@ -16,12 +16,137 @@ import path from "path";
 
 const VIEW_TYPE_CLAUDE = "niki-ai-sidebar-view";
 
+type Language = "zh-CN" | "en-US";
+
+const I18N = {
+  "zh-CN": {
+    openSidebarCommand: "打开 Niki AI 侧边栏",
+    sidebarTitle: "Niki AI Sidebar",
+    includeCurrentNote: "包含当前笔记",
+    send: "发送",
+    clear: "清空",
+    inputPlaceholder: "向 Niki AI 提问...",
+    emptyState: "开始和 Niki AI 对话吧。",
+    emptyResponse: "(无回复)",
+    thinkingPending: "Niki 正在思考...",
+    thinkingInline: "Niki 正在思考",
+    failedRunCommand: "运行 Claude 命令失败。",
+    claudeConnectionError:
+      "错误：无法连接到 Claude CLI。\n\n请检查：\n1. Claude CLI 是否已正确安装：\n   npm install -g @anthropic-ai/claude-code\n2. 命令是否在终端中可以正常运行\n3. 插件设置中的 Claude command 配置\n\n详细错误：{message}",
+    claudeNotFoundNotice:
+      "未找到 Claude CLI。请在设置里填写 Claude command，或把 claude 加入 PATH。",
+    claudeNotFoundReply:
+      "未找到 Claude CLI。请在设置里填写 Claude command，或把 claude 加入 PATH。",
+    noActiveNote: "当前没有可插入的笔记。",
+    insertedInto: "已插入到 {path}",
+    addedFile: "已添加: {name}",
+    roleYou: "你",
+    roleNiki: "Niki",
+    viewChanges: "查看变更",
+    changesApplied: "已应用变更",
+    changesAppliedTo: "已应用变更到 {path}",
+    applyAllChanges: "应用全部变更",
+    insertToNote: "插入到笔记",
+    copy: "复制",
+    copied: "已复制",
+    noTargetFile: "没有可应用变更的目标文件。",
+    failedApplyChanges: "应用变更失败：{message}",
+    unknownError: "未知错误",
+    searchFilesPlaceholder: "搜索文件...",
+    settingTitle: "Niki AI Sidebar",
+    settingClaudeCommandName: "Claude command",
+    settingClaudeCommandDesc:
+      "用于运行 Claude Code 的命令。使用 {prompt} 内联提示词，或留空以通过 stdin 发送。",
+    settingClaudeCommandPlaceholder: "claude -p \"{prompt}\"",
+    settingDefaultPromptName: "Default prompt",
+    settingDefaultPromptDesc: "每次请求前自动附加的系统提示词。",
+    settingDefaultPromptPlaceholder: "你是嵌入 Obsidian 的 Claude Code...",
+    settingWorkingDirName: "Working directory",
+    settingWorkingDirDesc: "Claude 命令的可选工作目录，默认为 vault 路径。",
+    settingLanguageName: "Language",
+    settingLanguageDesc: "界面显示语言。",
+    undoChanges: "撤销修改",
+    undoSuccess: "已撤销 {path} 的修改",
+    undoFailed: "撤销失败：{message}",
+  },
+  "en-US": {
+    openSidebarCommand: "Open Niki AI Sidebar",
+    sidebarTitle: "Niki AI Sidebar",
+    includeCurrentNote: "Include current note",
+    send: "Send",
+    clear: "Clear",
+    inputPlaceholder: "Ask Niki AI...",
+    emptyState: "Start a conversation with Niki AI.",
+    emptyResponse: "(empty response)",
+    thinkingPending: "Niki is thinking...",
+    thinkingInline: "Niki is thinking",
+    failedRunCommand: "Failed to run Claude command.",
+    claudeConnectionError:
+      "Error: Unable to connect to Claude CLI.\n\nPlease check:\n1. Claude CLI is installed:\n   npm install -g @anthropic-ai/claude-code\n2. Command works in terminal\n3. Claude command in settings\n\nDetails: {message}",
+    claudeNotFoundNotice:
+      "Claude CLI not found. Configure Claude command or add claude to PATH.",
+    claudeNotFoundReply:
+      "Claude CLI not found. Configure Claude command or add claude to PATH.",
+    noActiveNote: "No active note to insert into.",
+    insertedInto: "Inserted into {path}",
+    addedFile: "Added: {name}",
+    roleYou: "You",
+    roleNiki: "Niki",
+    viewChanges: "View changes",
+    changesApplied: "Changes applied",
+    changesAppliedTo: "Changes applied to {path}",
+    applyAllChanges: "Apply all changes",
+    insertToNote: "Insert to note",
+    copy: "Copy",
+    copied: "Copied",
+    noTargetFile: "No target file to apply changes to.",
+    failedApplyChanges: "Failed to apply changes: {message}",
+    unknownError: "Unknown error",
+    searchFilesPlaceholder: "Search files...",
+    settingTitle: "Niki AI Sidebar",
+    settingClaudeCommandName: "Claude command",
+    settingClaudeCommandDesc:
+      "Command to run Claude Code. Use {prompt} to inline the prompt, or leave it out to send via stdin.",
+    settingClaudeCommandPlaceholder: "claude -p \"{prompt}\"",
+    settingDefaultPromptName: "Default prompt",
+    settingDefaultPromptDesc: "Prepended to every request.",
+    settingDefaultPromptPlaceholder: "You are Claude Code embedded in Obsidian...",
+    settingWorkingDirName: "Working directory",
+    settingWorkingDirDesc:
+      "Optional cwd for the Claude command. Defaults to vault path.",
+    settingLanguageName: "Language",
+    settingLanguageDesc: "Language for the UI.",
+    undoChanges: "Undo changes",
+    undoSuccess: "Undone changes to {path}",
+    undoFailed: "Undo failed: {message}",
+  },
+} as const;
+
+type I18nKey = keyof typeof I18N["zh-CN"];
+
+function t(language: Language, key: I18nKey): string {
+  return (I18N[language] ?? I18N["zh-CN"])[key] ?? I18N["zh-CN"][key];
+}
+
+function format(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => vars[key] ?? "");
+}
+
 type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
   isError?: boolean;
   isPending?: boolean;
   codeChanges?: CodeChange[];
+  originalInput?: string;  // 保存原始用户输入（不包含@文件列表），用于生成话题标题
+  fileModifications?: FileModification[];  // 文件修改记录（用于撤销）
+};
+
+type FileModification = {
+  filePath: string;
+  originalContent: string;
+  file: TFile;
+  timestamp: number;
 };
 
 type CodeChange = {
@@ -30,12 +155,26 @@ type CodeChange = {
   newContent: string;
   blockIndex: number;
   applied?: boolean;
+  targetFile?: TFile;  // 新增：目标文件
+};
+
+type ChatTopic = {
+  id: string;                    // 唯一标识符
+  title: string;                 // 话题标题
+  messages: ChatMessage[];       // 该话题的所有消息
+  createdAt: number;             // 创建时间戳
+  updatedAt: number;             // 更新时间戳
 };
 
 interface ClaudeSidebarSettings {
   claudeCommand: string;
   defaultPrompt: string;
   workingDir: string;
+  language: Language;
+  includeCurrentNote: boolean;
+  // 新增话题数据
+  topics: ChatTopic[];           // 所有话题
+  currentTopicId: string | null; // 当前话题ID
 }
 
 const DEFAULT_SETTINGS: ClaudeSidebarSettings = {
@@ -44,6 +183,10 @@ const DEFAULT_SETTINGS: ClaudeSidebarSettings = {
     "You are Niki AI embedded in Obsidian (powered by Claude Code). Help me edit Markdown notes.\n" +
     "When you propose changes, be explicit and keep the style consistent.",
   workingDir: "",
+  language: "zh-CN",
+  includeCurrentNote: false,
+  topics: [],
+  currentTopicId: null,
 };
 
 export default class ClaudeSidebarPlugin extends Plugin {
@@ -56,13 +199,13 @@ export default class ClaudeSidebarPlugin extends Plugin {
       return new ClaudeSidebarView(leaf, this);
     });
 
-    this.addRibbonIcon("bot", "Open Niki AI Sidebar", () => {
+    this.addRibbonIcon("bot", this.t("openSidebarCommand"), () => {
       this.activateView();
     });
 
     this.addCommand({
       id: "open-niki-ai-sidebar",
-      name: "Open Niki AI Sidebar",
+      name: this.t("openSidebarCommand"),
       callback: () => this.activateView(),
     });
 
@@ -94,6 +237,14 @@ export default class ClaudeSidebarPlugin extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
   }
+
+  t(key: I18nKey) {
+    return t(this.settings.language, key);
+  }
+
+  tf(key: I18nKey, vars: Record<string, string>) {
+    return format(this.t(key), vars);
+  }
 }
 
 class ClaudeSidebarView extends ItemView {
@@ -107,6 +258,10 @@ class ClaudeSidebarView extends ItemView {
   private mentionedFiles: TFile[] = [];
   private mentionTagsEl: HTMLDivElement;
   private filePickerEl: HTMLDivElement;
+  // 新增：话题相关
+  private topicSelectEl: HTMLSelectElement;
+  private newTopicBtn: HTMLButtonElement;
+  private deleteTopicBtn: HTMLButtonElement;
 
   constructor(leaf: WorkspaceLeaf, plugin: ClaudeSidebarPlugin) {
     super(leaf);
@@ -129,6 +284,28 @@ class ClaudeSidebarView extends ItemView {
     const header = container.createDiv("claude-code-header");
     header.createDiv({ text: "Niki AI" }).addClass("claude-code-title");
 
+    // 新增：话题控制区域
+    const topicControl = container.createDiv("claude-code-topic-control");
+
+    const topicSelector = topicControl.createDiv("claude-code-topic-selector");
+    this.topicSelectEl = topicSelector.createEl("select", {
+      cls: "claude-code-topic-select"
+    });
+
+    const topicActions = topicControl.createDiv("claude-code-topic-actions");
+
+    this.newTopicBtn = topicActions.createEl("button", {
+      text: "+",
+      cls: "claude-code-topic-btn claude-code-topic-new"
+    });
+    this.newTopicBtn.setAttribute("aria-label", "新建话题");
+
+    this.deleteTopicBtn = topicActions.createEl("button", {
+      text: "×",
+      cls: "claude-code-topic-btn claude-code-topic-delete"
+    });
+    this.deleteTopicBtn.setAttribute("aria-label", "删除话题");
+
     this.messagesEl = container.createDiv("claude-code-messages");
 
     const composer = container.createDiv("claude-code-composer");
@@ -143,18 +320,19 @@ class ClaudeSidebarView extends ItemView {
     this.includeNoteEl = includeNoteWrap.createEl("input", {
       type: "checkbox",
     });
-    includeNoteWrap.createEl("span", { text: "Include current note" });
+    this.includeNoteEl.checked = this.plugin.settings.includeCurrentNote;
+    includeNoteWrap.createEl("span", { text: this.plugin.t("includeCurrentNote") });
 
     const actions = topRow.createDiv("claude-code-actions");
     const sendBtn = actions.createEl("button", {
-      text: "Send",
+      text: this.plugin.t("send"),
       cls: "mod-cta",
     });
-    const clearBtn = actions.createEl("button", { text: "Clear" });
+    const clearBtn = actions.createEl("button", { text: this.plugin.t("clear") });
 
     this.inputEl = composer.createEl("textarea", {
       cls: "claude-code-input",
-      attr: { placeholder: "Ask Niki AI..." },
+      attr: { placeholder: this.plugin.t("inputPlaceholder") },
     });
     this.inputEl.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
@@ -232,7 +410,7 @@ class ClaudeSidebarView extends ItemView {
 
             if (file) {
               this.addMentionedFile(file);
-              new Notice(`已添加: ${file.basename}`);
+              new Notice(this.plugin.tf("addedFile", { name: file.basename }));
               return;
             } else {
               // 如果在 vault 中找不到，可能是外部文件，创建临时文件对象
@@ -243,7 +421,7 @@ class ClaudeSidebarView extends ItemView {
                 stat: { mtime: Date.now(), ctime: Date.now(), size: 0 },
               } as TFile;
               this.addMentionedFile(tempFile);
-              new Notice(`已添加: ${tempFile.basename}`);
+              new Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
               return;
             }
           }
@@ -272,7 +450,7 @@ class ClaudeSidebarView extends ItemView {
 
           if (vaultFile) {
             this.addMentionedFile(vaultFile);
-            new Notice(`已添加: ${vaultFile.basename}`);
+            new Notice(this.plugin.tf("addedFile", { name: vaultFile.basename }));
           } else {
             // 外部文件：创建简单的文件对象
             const tempFile = {
@@ -282,20 +460,55 @@ class ClaudeSidebarView extends ItemView {
               stat: { mtime: Date.now(), ctime: Date.now(), size: 0 },
             } as TFile;
             this.addMentionedFile(tempFile);
-            new Notice(`已添加: ${tempFile.basename}`);
+            new Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
           }
         }
       }
     });
 
+    this.includeNoteEl.addEventListener("change", async () => {
+      this.plugin.settings.includeCurrentNote = this.includeNoteEl.checked;
+      await this.plugin.saveSettings();
+    });
+
     sendBtn.addEventListener("click", () => this.handleSend());
     clearBtn.addEventListener("click", () => this.clearChat());
 
+    // 新增：话题事件绑定
+    this.topicSelectEl.addEventListener("change", async (e) => {
+      const target = e.target as HTMLSelectElement;
+      await this.switchTopic(target.value);
+    });
+
+    this.newTopicBtn.addEventListener("click", async () => {
+      await this.createTopic();
+    });
+
+    this.deleteTopicBtn.addEventListener("click", async () => {
+      await this.deleteTopic();
+    });
+
+    // 新增：初始化话题
+    if (this.plugin.settings.topics.length === 0) {
+      await this.createTopic();
+    } else {
+      const currentTopicId = this.plugin.settings.currentTopicId;
+      if (currentTopicId) {
+        const topic = this.plugin.settings.topics.find(t => t.id === currentTopicId);
+        if (topic) {
+          this.messages = [...topic.messages];
+        }
+      }
+    }
+
+    this.renderTopicSelector();
     this.loaded = true;
     this.renderMessages();
   }
 
   async onClose() {
+    // 新增：保存当前话题状态
+    await this.saveCurrentTopic();
     this.loaded = false;
   }
 
@@ -313,13 +526,41 @@ class ClaudeSidebarView extends ItemView {
       messageContent = `${fileList}\n\n${content}`;
     }
 
-    this.addMessage({ role: "user", content: messageContent });
-    this.clearMentionTags(); // 清空 @ 标签
+    this.addMessage({
+      role: "user",
+      content: messageContent,
+      originalInput: content  // 保存原始输入，用于生成话题标题
+    });
 
+    // 新增：更新话题标题（在清空 mentionedFiles 之前）
+    await this.updateTopicTitle();
+
+    // 记录调用前的文件状态（用于撤销）
+    const filesToTrack: TFile[] = [...this.mentionedFiles];
+    if (this.includeNoteEl.checked) {
+      const activeFile = this.getActiveFile();
+      if (activeFile && !filesToTrack.some((f) => f.path === activeFile.path)) {
+        filesToTrack.push(activeFile);
+      }
+    }
+    const beforeTimestamp = Date.now();
+    const fileSnapshots = new Map<string, string>();
+    for (const file of filesToTrack) {
+      try {
+        fileSnapshots.set(file.path, await this.app.vault.read(file));
+      } catch {
+        // 文件读取失败，跳过
+      }
+    }
+
+    // 注意：buildPrompt 需要 mentionedFiles，所以必须在 clearMentionTags 之前调用
     const prompt = await this.buildPrompt(content);
+
+    // buildPrompt 完成后，清空 @ 标签
+    this.clearMentionTags();
     const pendingMessage: ChatMessage = {
       role: "assistant",
-      content: "Niki 正在思考...",
+      content: this.plugin.t("thinkingPending"),
       isPending: true,
     };
     this.messages.push(pendingMessage);
@@ -328,26 +569,66 @@ class ClaudeSidebarView extends ItemView {
     try {
       const reply = await this.runClaudeCommand(prompt);
       if (!reply || reply.trim() === "") {
-        pendingMessage.content = "(empty response)";
+        pendingMessage.content = this.plugin.t("emptyResponse");
         pendingMessage.isError = true;
       } else {
         pendingMessage.content = reply.trim();
       }
       pendingMessage.isPending = false;
+
+      // 检查文件是否被修改
+      const modifications: FileModification[] = [];
+      for (const file of filesToTrack) {
+        const beforeContent = fileSnapshots.get(file.path);
+        if (!beforeContent) continue;
+
+        try {
+          const afterContent = await this.app.vault.read(file);
+          console.log(`检查文件 ${file.path}:`, {
+            beforeLength: beforeContent.length,
+            afterLength: afterContent.length,
+            changed: afterContent !== beforeContent
+          });
+          if (afterContent !== beforeContent) {
+            modifications.push({
+              filePath: file.path,
+              originalContent: beforeContent,
+              file,
+              timestamp: beforeTimestamp,
+            });
+          }
+        } catch (e) {
+          console.error(`读取文件 ${file.path} 失败:`, e);
+        }
+      }
+
+      console.log(`检测到 ${modifications.length} 个文件被修改`);
+      if (modifications.length > 0) {
+        pendingMessage.fileModifications = modifications;
+      }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to run Claude command.";
-      pendingMessage.content = `错误：无法连接到 Claude CLI。\n\n请检查：\n1. Claude CLI 是否已正确安装：\n   npm install -g @anthropic-ai/claude-code\n2. 命令是否在终端中可以正常运行\n3. 插件设置中的 Claude command 配置\n\n详细错误：${message}`;
+        error instanceof Error
+          ? error.message
+          : this.plugin.t("failedRunCommand");
+      pendingMessage.content = this.plugin.tf("claudeConnectionError", {
+        message,
+      });
       pendingMessage.isError = true;
       pendingMessage.isPending = false;
     }
     this.renderMessages();
     this.scrollToBottom();
+
+    // 新增：保存消息到话题
+    await this.saveCurrentTopic();
   }
 
   clearChat() {
     this.messages = [];
     this.renderMessages();
+    // 新增：保存到话题
+    void this.saveCurrentTopic();
   }
 
   addMessage(message: ChatMessage) {
@@ -463,10 +744,10 @@ class ClaudeSidebarView extends ItemView {
     }
 
     new Notice(
-      "未找到 Claude CLI。请在设置里填写 Claude command，或把 claude 加入 PATH。"
+      this.plugin.t("claudeNotFoundNotice")
     );
     return Promise.resolve(
-      "Claude CLI not found. Configure Claude command or add claude to PATH."
+      this.plugin.t("claudeNotFoundReply")
     );
   }
 
@@ -486,12 +767,27 @@ class ClaudeSidebarView extends ItemView {
   async insertIntoActiveFile(content: string) {
     const file = this.getActiveFile();
     if (!file) {
-      new Notice("No active note to insert into.");
+      new Notice(this.plugin.t("noActiveNote"));
       return;
     }
     const existing = await this.app.vault.read(file);
     await this.app.vault.modify(file, `${existing}\n\n${content.trim()}\n`);
-    new Notice(`Inserted into ${file.path}`);
+    new Notice(this.plugin.tf("insertedInto", { path: file.path }));
+  }
+
+  private async copyToClipboard(content: string): Promise<void> {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(content);
+      return;
+    }
+    const textarea = document.createElement("textarea");
+    textarea.value = content;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
   }
 
   async renderMessages() {
@@ -502,7 +798,7 @@ class ClaudeSidebarView extends ItemView {
     this.messagesEl.empty();
     if (this.messages.length === 0) {
       this.messagesEl.createDiv({
-        text: "Start a conversation with Niki AI.",
+        text: this.plugin.t("emptyState"),
         cls: "claude-code-empty",
       });
       return;
@@ -518,14 +814,17 @@ class ClaudeSidebarView extends ItemView {
         wrapper.addClass("is-pending");
       }
       const roleEl = wrapper.createDiv({
-        text: message.role === "user" ? "You" : "Niki",
+        text:
+          message.role === "user"
+            ? this.plugin.t("roleYou")
+            : this.plugin.t("roleNiki"),
         cls: "claude-code-role",
       });
 
       const contentEl = wrapper.createDiv("claude-code-content");
       if (message.isPending) {
         const thinking = contentEl.createSpan("claude-code-thinking");
-        thinking.createSpan({ text: "Niki 正在思考" });
+        thinking.createSpan({ text: this.plugin.t("thinkingInline") });
         thinking.createSpan({ cls: "claude-code-thinking-dots" });
       } else {
         try {
@@ -542,8 +841,26 @@ class ClaudeSidebarView extends ItemView {
         }
       }
 
+      const actions = wrapper.createDiv("claude-code-message-actions");
+      const copyBtn = actions.createEl("button", {
+        text: this.plugin.t("copy"),
+      });
+      copyBtn.addEventListener("click", async () => {
+        await this.copyToClipboard(message.content);
+        new Notice(this.plugin.t("copied"));
+      });
+
       if (message.role === "assistant" && !message.isError && !message.isPending) {
-        const actions = wrapper.createDiv("claude-code-message-actions");
+        // 检查是否有文件被修改（用于撤销）
+        if (message.fileModifications && message.fileModifications.length > 0) {
+          const undoBtn = actions.createEl("button", {
+            text: this.plugin.t("undoChanges"),
+            cls: "claude-code-undo-btn",
+          });
+          undoBtn.addEventListener("click", async () => {
+            await this.undoFileModifications(message);
+          });
+        }
 
         // 延迟检测代码块
         if (!message.codeChanges) {
@@ -554,8 +871,8 @@ class ClaudeSidebarView extends ItemView {
           // 显示 "View changes" 按钮
           const viewChangesBtn = actions.createEl("button", {
             text: message.codeChanges.some((c) => c.applied)
-              ? "Changes applied"
-              : "View changes",
+              ? this.plugin.t("changesApplied")
+              : this.plugin.t("viewChanges"),
           });
           viewChangesBtn.addEventListener("click", () =>
             this.toggleDiffView(wrapper, message)
@@ -565,17 +882,17 @@ class ClaudeSidebarView extends ItemView {
           const hasUnapplied = message.codeChanges.some((c) => !c.applied);
           if (hasUnapplied) {
             const applyBtn = actions.createEl("button", {
-              text: "Apply all changes",
+              text: this.plugin.t("applyAllChanges"),
               cls: "mod-cta",
             });
             applyBtn.addEventListener("click", () =>
               this.applyAllChanges(message)
             );
           }
-        } else {
-          // 原有的 "Insert to note" 按钮
+        } else if (!message.fileModifications || message.fileModifications.length === 0) {
+          // 只有在没有文件修改时才显示 "Insert to note" 按钮
           const insertBtn = actions.createEl("button", {
-            text: "Insert to note",
+            text: this.plugin.t("insertToNote"),
           });
           insertBtn.addEventListener("click", () =>
             this.insertIntoActiveFile(message.content)
@@ -589,6 +906,48 @@ class ClaudeSidebarView extends ItemView {
     this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
   }
 
+  // 根据内容查找最匹配的文件
+  private findBestMatchingFile(content: string): TFile | null {
+    const allFiles = this.app.vault.getMarkdownFiles();
+    const contentLines = content.trim().split('\n').slice(0, 50); // 只比较前50行
+    let bestMatch: TFile | null = null;
+    let bestScore = 0;
+
+    for (const file of allFiles) {
+      try {
+        const fileContent = this.app.vault.cachedRead(file);
+        if (!fileContent) continue;
+
+        const fileLines = fileContent.split('\n').slice(0, 50);
+        let matchCount = 0;
+
+        // 计算匹配行数
+        for (const line of contentLines) {
+          if (line.trim().length > 5) {  // 只比较有意义的行
+            for (const fileLine of fileLines) {
+              if (fileLine.trim() === line.trim()) {
+                matchCount++;
+                break;
+              }
+            }
+          }
+        }
+
+        // 计算匹配分数（匹配行数 / 内容行数）
+        const score = matchCount / Math.max(contentLines.filter(l => l.trim().length > 5).length, 1);
+
+        if (score > bestScore && score > 0.3) {  // 至少30%匹配才考虑
+          bestScore = score;
+          bestMatch = file;
+        }
+      } catch {
+        // 忽略读取失败的文件
+      }
+    }
+
+    return bestMatch;
+  }
+
   // 解析代码块变更
   private async parseCodeChanges(message: ChatMessage): Promise<CodeChange[]> {
     const codeChanges: CodeChange[] = [];
@@ -598,29 +957,40 @@ class ClaudeSidebarView extends ItemView {
 
     while ((match = codeBlockRegex.exec(message.content)) !== null) {
       const [, language, content] = match;
-      const activeFile = this.getActiveFile();
-      if (!activeFile) continue;
 
-      const originalContent = await this.app.vault.cachedRead(activeFile);
+      // 查找最佳匹配的文件
+      const targetFile = this.findBestMatchingFile(content);
+      if (!targetFile) continue;
+
+      const originalContent = await this.app.vault.cachedRead(targetFile);
       codeChanges.push({
         language,
         originalContent,
         newContent: content.trim(),
         blockIndex: blockIndex++,
+        targetFile,
       });
     }
     return codeChanges;
   }
 
   // 渲染 diff 视图
-  private renderDiffView(container: HTMLElement, diff: DiffResult): void {
+  private renderDiffView(container: HTMLElement, diff: DiffResult, targetFile: TFile): void {
     const diffContainer = container.createDiv("claude-code-diff-container");
 
     const header = diffContainer.createDiv("claude-code-diff-header");
-    header.createSpan({
-      text: `Changes for ${this.getActiveFile()?.path || "current file"}`,
+
+    // 创建可点击的文件路径链接
+    const fileLink = header.createEl("a", {
+      text: targetFile.path,
       cls: "claude-code-diff-file",
     });
+    fileLink.addEventListener("click", () => {
+      // 打开文件到新标签页
+      this.app.workspace.openLinkText(targetFile.path, "", true);
+    });
+    fileLink.style.cursor = "pointer";
+    fileLink.style.textDecoration = "underline";
 
     const stats = this.computeDiffStats(diff);
     header.createSpan({
@@ -675,26 +1045,29 @@ class ClaudeSidebarView extends ItemView {
     if (!message.codeChanges || message.codeChanges.length === 0) return;
 
     const codeChange = message.codeChanges[0];
+    if (!codeChange.targetFile) return;
+
     const diff = computeDiff(codeChange.originalContent, codeChange.newContent);
-    this.renderDiffView(wrapper, diff);
+    this.renderDiffView(wrapper, diff, codeChange.targetFile);
   }
 
   // 应用代码变更
   private async applyCodeChanges(codeChange: CodeChange): Promise<void> {
-    const file = this.getActiveFile();
+    const file = codeChange.targetFile;
     if (!file) {
-      new Notice("No active file to apply changes to.");
+      new Notice(this.plugin.t("noTargetFile"));
       return;
     }
 
     try {
       await this.app.vault.modify(file, codeChange.newContent);
       codeChange.applied = true;
-      new Notice(`Changes applied to ${file.path}`);
+      new Notice(this.plugin.tf("changesAppliedTo", { path: file.path }));
       this.renderMessages();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      new Notice(`Failed to apply changes: ${message}`);
+      const message =
+        error instanceof Error ? error.message : this.plugin.t("unknownError");
+      new Notice(this.plugin.tf("failedApplyChanges", { message }));
     }
   }
 
@@ -705,6 +1078,27 @@ class ClaudeSidebarView extends ItemView {
         await this.applyCodeChanges(codeChange);
       }
     }
+  }
+
+  // 撤销文件修改
+  private async undoFileModifications(message: ChatMessage): Promise<void> {
+    if (!message.fileModifications || message.fileModifications.length === 0) {
+      return;
+    }
+
+    for (const mod of message.fileModifications) {
+      try {
+        await this.app.vault.modify(mod.file, mod.originalContent);
+        new Notice(this.plugin.tf("undoSuccess", { path: mod.filePath }));
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : this.plugin.t("unknownError");
+        new Notice(this.plugin.tf("undoFailed", { message: errorMsg }));
+      }
+    }
+
+    // 清除修改记录，因为已经撤销了
+    message.fileModifications = [];
+    this.renderMessages();
   }
 
   // ============ @ 文件相关方法 ============
@@ -722,7 +1116,7 @@ class ClaudeSidebarView extends ItemView {
 
     const searchInput = this.filePickerEl.createEl("input", {
       type: "text",
-      placeholder: "搜索文件...",
+      placeholder: this.plugin.t("searchFilesPlaceholder"),
       cls: "claude-code-file-search",
     });
 
@@ -830,6 +1224,177 @@ class ClaudeSidebarView extends ItemView {
   private clearMentionTags(): void {
     this.mentionedFiles = [];
     this.renderMentionTags();
+  }
+
+  // ============ 话题管理相关方法 ============
+
+  // 生成话题ID
+  private generateTopicId(): string {
+    return `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // 创建新话题
+  private async createTopic(): Promise<void> {
+    // 保存当前话题的消息（在切换 ID 之前）
+    if (this.plugin.settings.currentTopicId) {
+      const currentTopic = this.plugin.settings.topics.find(
+        t => t.id === this.plugin.settings.currentTopicId
+      );
+      if (currentTopic) {
+        currentTopic.messages = [...this.messages];
+        currentTopic.updatedAt = Date.now();
+      }
+    }
+
+    const newTopic: ChatTopic = {
+      id: this.generateTopicId(),
+      title: "新话题",
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    this.plugin.settings.topics.push(newTopic);
+    this.plugin.settings.currentTopicId = newTopic.id;
+
+    // 清空当前消息（新话题是空的）
+    this.messages = [];
+
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+    this.scrollToBottom();
+  }
+
+  // 切换话题
+  private async switchTopic(topicId: string): Promise<void> {
+    const topic = this.plugin.settings.topics.find(t => t.id === topicId);
+    if (!topic) return;
+
+    // 保存当前话题的消息
+    if (this.plugin.settings.currentTopicId) {
+      const currentTopic = this.plugin.settings.topics.find(
+        t => t.id === this.plugin.settings.currentTopicId
+      );
+      if (currentTopic) {
+        currentTopic.messages = [...this.messages];
+        currentTopic.updatedAt = Date.now();
+      }
+    }
+
+    // 切换到新话题
+    this.plugin.settings.currentTopicId = topicId;
+    this.messages = [...topic.messages];
+
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+    this.scrollToBottom();
+  }
+
+  // 删除话题
+  private async deleteTopic(): Promise<void> {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId) return;
+
+    const topicIndex = this.plugin.settings.topics.findIndex(
+      t => t.id === currentTopicId
+    );
+    if (topicIndex === -1) return;
+
+    // 如果只有一个话题，清空而不是删除
+    if (this.plugin.settings.topics.length <= 1) {
+      this.messages = [];
+      this.plugin.settings.topics[0].messages = [];
+      this.plugin.settings.topics[0].title = "新话题";
+      this.plugin.settings.topics[0].updatedAt = Date.now();
+      await this.plugin.saveSettings();
+      this.renderMessages();
+      this.renderTopicSelector();
+      return;
+    }
+
+    // 删除当前话题
+    this.plugin.settings.topics.splice(topicIndex, 1);
+
+    // 切换到相邻话题
+    const nextTopic = this.plugin.settings.topics[Math.max(0, topicIndex - 1)];
+    this.plugin.settings.currentTopicId = nextTopic.id;
+    this.messages = [...nextTopic.messages];
+
+    await this.plugin.saveSettings();
+    this.renderMessages();
+    this.renderTopicSelector();
+  }
+
+  // 自动生成话题标题
+  private async generateTopicTitle(topic: ChatTopic): Promise<string> {
+    const firstUserMessage = topic.messages.find(m => m.role === "user");
+    if (!firstUserMessage) {
+      return "新话题";
+    }
+
+    // 使用 originalInput（不包含@文件列表）来生成标题，如果没有则使用 content
+    const content = (firstUserMessage.originalInput || firstUserMessage.content).trim();
+    const title = content.length > 30
+      ? content.substring(0, 30) + "..."
+      : content;
+
+    return title;
+  }
+
+  // 更新话题标题
+  private async updateTopicTitle(): Promise<void> {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId) return;
+
+    const topic = this.plugin.settings.topics.find(t => t.id === currentTopicId);
+    if (!topic) return;
+
+    if (topic.title === "新话题") {
+      topic.title = await this.generateTopicTitle(topic);
+      await this.plugin.saveSettings();
+      this.renderTopicSelector();
+    }
+  }
+
+  // 保存当前话题
+  private async saveCurrentTopic(): Promise<void> {
+    const currentTopicId = this.plugin.settings.currentTopicId;
+    if (!currentTopicId) return;
+
+    const topic = this.plugin.settings.topics.find(t => t.id === currentTopicId);
+    if (topic) {
+      topic.messages = [...this.messages];
+      topic.updatedAt = Date.now();
+      await this.plugin.saveSettings();
+    }
+  }
+
+  // 渲染话题选择器
+  private renderTopicSelector(): void {
+    if (!this.topicSelectEl) return;
+
+    this.topicSelectEl.empty();
+
+    const topics = this.plugin.settings.topics;
+    const currentTopicId = this.plugin.settings.currentTopicId;
+
+    for (const topic of topics) {
+      const option = this.topicSelectEl.createEl("option", {
+        value: topic.id,
+        text: topic.title || "未命名话题",
+      });
+
+      if (topic.id === currentTopicId) {
+        option.setAttribute("selected", "selected");
+      }
+    }
+
+    // 更新删除按钮状态
+    if (this.deleteTopicBtn) {
+      this.deleteTopicBtn.disabled = topics.length <= 1;
+    }
   }
 }
 
@@ -964,16 +1529,29 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: "Niki AI Sidebar" });
+    containerEl.createEl("h2", { text: this.plugin.t("settingTitle") });
 
     new Setting(containerEl)
-      .setName("Claude command")
-      .setDesc(
-        "Command to run Claude Code. Use {prompt} to inline the prompt, or leave it out to send via stdin."
-      )
+      .setName(this.plugin.t("settingLanguageName"))
+      .setDesc(this.plugin.t("settingLanguageDesc"))
+      .addDropdown((dropdown) =>
+        dropdown
+          .addOption("zh-CN", "简体中文")
+          .addOption("en-US", "English")
+          .setValue(this.plugin.settings.language)
+          .onChange(async (value) => {
+            this.plugin.settings.language = value as Language;
+            await this.plugin.saveSettings();
+            this.display();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(this.plugin.t("settingClaudeCommandName"))
+      .setDesc(this.plugin.t("settingClaudeCommandDesc"))
       .addText((text) =>
         text
-          .setPlaceholder("claude -p \"{prompt}\"")
+          .setPlaceholder(this.plugin.t("settingClaudeCommandPlaceholder"))
           .setValue(this.plugin.settings.claudeCommand)
           .onChange(async (value) => {
             this.plugin.settings.claudeCommand = value;
@@ -982,11 +1560,11 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Default prompt")
-      .setDesc("Prepended to every request.")
+      .setName(this.plugin.t("settingDefaultPromptName"))
+      .setDesc(this.plugin.t("settingDefaultPromptDesc"))
       .addTextArea((text) =>
         text
-          .setPlaceholder("You are Claude Code embedded in Obsidian...")
+          .setPlaceholder(this.plugin.t("settingDefaultPromptPlaceholder"))
           .setValue(this.plugin.settings.defaultPrompt)
           .onChange(async (value) => {
             this.plugin.settings.defaultPrompt = value;
@@ -995,8 +1573,8 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Working directory")
-      .setDesc("Optional cwd for the Claude command. Defaults to vault path.")
+      .setName(this.plugin.t("settingWorkingDirName"))
+      .setDesc(this.plugin.t("settingWorkingDirDesc"))
       .addText((text) =>
         text
           .setPlaceholder("/path/to/vault")

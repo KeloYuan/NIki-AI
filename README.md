@@ -17,27 +17,14 @@
 - 默认提示词可自定义
 - 通过本地 Claude Code CLI 运行（可用 {prompt} 或 stdin）
 
-## 安装方式（开发版）
-目前提供开发版安装，适合自用或调试。
-
-1. 进入插件项目目录并安装依赖
-   - `npm install`
-2. 构建插件
-   - `npm run build`
-3. 把以下文件复制到你的 Obsidian vault 的
-   `.obsidian/plugins/niki-ai/` 目录下
-   - `main.js`
-   - `manifest.json`
-   - `styles.css`
-4. 在 Obsidian 的第三方插件里启用 Niki AI
-
 ## 使用教程
-1. 打开右侧边栏，点击插件图标或命令面板执行
-   `Open Niki AI Sidebar`
-2. 在侧边栏输入问题并发送
-3. 勾选 `Include current note` 可把当前笔记作为上下文
-4. 如果需要把回复写入当前笔记，点击 `Insert to note`
-
+1. 把main.js、manifest.json、styles.cs三个文件放入以下路径
+   `仓库/.obsidian/plugins/niki-ai`
+2.然后在设置中启动 Niki-AI就可以正常使用了 
+注意，如果要使用AI编辑的话，需要在考录的code配置里面添加
+`"permissions": {
+    "defaultMode": "bypassPermissions"
+  },`
 ## 配置教程
 打开 Obsidian 设置 -> 插件 -> Niki AI：
 
