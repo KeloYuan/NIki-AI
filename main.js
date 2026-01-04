@@ -162,51 +162,65 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
       const transfer = event.dataTransfer;
       if (!transfer)
         return;
-      try {
-        const jsonData = transfer.getData("text/plain");
-        if (jsonData) {
-          const data = JSON.parse(jsonData);
-          if (data.type === "file" && data.file) {
-            const file = this.app.vault.getAbstractFileByPath(data.file.path);
-            if (file instanceof import_obsidian.TFile) {
+      console.log("Drop event types:", transfer.types);
+      const uriData = transfer.getData("text/plain");
+      console.log("URI data:", uriData);
+      if (uriData && uriData.startsWith("obsidian://open?")) {
+        try {
+          const url = new URL(uriData);
+          const vaultName = url.searchParams.get("vault");
+          const filePath = url.searchParams.get("file");
+          console.log("Parsed URI - vault:", vaultName, "file:", filePath);
+          if (filePath) {
+            const decodedPath = decodeURIComponent(filePath);
+            console.log("Decoded path:", decodedPath);
+            const fileName = decodedPath.split("/").pop() || decodedPath;
+            const file = this.app.vault.getMarkdownFiles().find(
+              (f) => f.path === decodedPath || f.path.endsWith(decodedPath) || f.basename === fileName
+            );
+            if (file) {
               this.addMentionedFile(file);
               new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${file.basename}`);
               return;
-            }
-          }
-        }
-      } catch (e) {
-      }
-      const files = transfer.files;
-      if (!files || files.length === 0)
-        return;
-      for (const file of Array.from(files)) {
-        const filePath = file.path || file.name;
-        if (!filePath)
-          continue;
-        const vaultFile = this.app.vault.getMarkdownFiles().find(
-          (f) => filePath.endsWith(f.path) || f.path.endsWith(filePath) || f.basename === file.name.replace(/\.[^/.]+$/, "")
-        );
-        if (vaultFile) {
-          this.addMentionedFile(vaultFile);
-          new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${vaultFile.basename}`);
-        } else {
-          try {
-            const fs2 = require("fs");
-            if (fs2.existsSync(filePath)) {
-              const content = await fs2.promises.readFile(filePath, "utf-8");
+            } else {
               const tempFile = {
-                path: filePath,
-                basename: file.name.replace(/\.[^/.]+$/, ""),
-                // 添加一个特殊标记，表示这是外部文件
-                stat: { size: content.length, mtime: Date.now(), ctime: Date.now() }
+                path: decodedPath,
+                basename: fileName.replace(/\.md$/, ""),
+                extension: "md",
+                stat: { mtime: Date.now(), ctime: Date.now(), size: 0 }
               };
               this.addMentionedFile(tempFile);
-              new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0\u5916\u90E8\u6587\u4EF6: ${tempFile.basename}`);
+              new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${tempFile.basename}`);
+              return;
             }
-          } catch (error) {
-            new import_obsidian.Notice(`\u65E0\u6CD5\u8BFB\u53D6\u6587\u4EF6: ${file.name}`);
-            console.error("Failed to read dropped file:", error);
+          }
+        } catch (e) {
+          console.error("Failed to parse Obsidian URI:", e);
+        }
+      }
+      const files = transfer.files;
+      console.log("Files from File API:", files);
+      if (files && files.length > 0) {
+        for (const file of Array.from(files)) {
+          const filePath = file.path || file.name;
+          console.log("Processing file:", filePath);
+          if (!filePath)
+            continue;
+          const vaultFile = this.app.vault.getMarkdownFiles().find(
+            (f) => filePath.endsWith(f.path) || f.path.endsWith(filePath) || f.basename === file.name.replace(/\.[^/.]+$/, "")
+          );
+          if (vaultFile) {
+            this.addMentionedFile(vaultFile);
+            new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${vaultFile.basename}`);
+          } else {
+            const tempFile = {
+              path: filePath,
+              basename: file.name.replace(/\.[^/.]+$/, ""),
+              extension: file.name.split(".").pop(),
+              stat: { mtime: Date.now(), ctime: Date.now(), size: 0 }
+            };
+            this.addMentionedFile(tempFile);
+            new import_obsidian.Notice(`\u5DF2\u6DFB\u52A0: ${tempFile.basename}`);
           }
         }
       }
@@ -225,7 +239,14 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
       return;
     }
     this.inputEl.value = "";
-    this.addMessage({ role: "user", content });
+    let messageContent = content;
+    if (this.mentionedFiles.length > 0) {
+      const fileList = this.mentionedFiles.map((f) => `@${f.basename}`).join(", ");
+      messageContent = `${fileList}
+
+${content}`;
+    }
+    this.addMessage({ role: "user", content: messageContent });
     this.clearMentionTags();
     const prompt = await this.buildPrompt(content);
     const pendingMessage = {
@@ -279,13 +300,28 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
 ${system}`);
     }
     if (this.mentionedFiles.length > 0) {
-      const filePaths = this.mentionedFiles.map((f) => f.path).join(", ");
-      parts.push(`[@ Referenced files: ${filePaths}]`);
+      for (const file of this.mentionedFiles) {
+        try {
+          const content = await this.app.vault.read(file);
+          parts.push(`[@ ${file.path}]
+${content}`);
+        } catch (e) {
+          parts.push(`[@ ${file.path}]
+(\u65E0\u6CD5\u8BFB\u53D6\u6587\u4EF6)`);
+        }
+      }
     }
     if (this.includeNoteEl.checked) {
       const activeFile = this.getActiveFile();
       if (activeFile && !this.mentionedFiles.some((f) => f.path === activeFile.path)) {
-        parts.push(`[@ Current note: ${activeFile.path}]`);
+        try {
+          const noteText = await this.app.vault.read(activeFile);
+          parts.push(`[@ Current note: ${activeFile.path}]
+${noteText}`);
+        } catch (e) {
+          parts.push(`[@ Current note: ${activeFile.path}]
+(\u65E0\u6CD5\u8BFB\u53D6\u6587\u4EF6)`);
+        }
       }
     }
     const history = this.messages.filter((msg) => msg.role !== "system").map((msg) => `${msg.role.toUpperCase()}: ${msg.content}`).join("\n\n");

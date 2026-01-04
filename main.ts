@@ -200,67 +200,89 @@ class ClaudeSidebarView extends ItemView {
       event.preventDefault();
       this.inputEl.removeClass("claude-code-input-dragover");
 
-      // 尝试获取 Obsidian 拖拽的文件
       const transfer = event.dataTransfer;
       if (!transfer) return;
 
-      // 方法1: 检查 Obsidian 内部文件拖拽
-      try {
-        const jsonData = transfer.getData("text/plain");
-        if (jsonData) {
-          const data = JSON.parse(jsonData);
-          if (data.type === "file" && data.file) {
-            const file = this.app.vault.getAbstractFileByPath(data.file.path);
-            if (file instanceof TFile) {
+      console.log("Drop event types:", transfer.types);
+
+      // 方法1: 处理 Obsidian obsidian://open URI
+      const uriData = transfer.getData("text/plain");
+      console.log("URI data:", uriData);
+
+      if (uriData && uriData.startsWith("obsidian://open?")) {
+        try {
+          const url = new URL(uriData);
+          const vaultName = url.searchParams.get("vault");
+          const filePath = url.searchParams.get("file");
+
+          console.log("Parsed URI - vault:", vaultName, "file:", filePath);
+
+          if (filePath) {
+            // Obsidian URI 编码的文件路径，需要解码
+            const decodedPath = decodeURIComponent(filePath);
+            console.log("Decoded path:", decodedPath);
+
+            // 尝试从路径中提取文件名
+            const fileName = decodedPath.split('/').pop() || decodedPath;
+
+            // 在 vault 中查找文件
+            const file = this.app.vault.getMarkdownFiles().find((f) =>
+              f.path === decodedPath || f.path.endsWith(decodedPath) || f.basename === fileName
+            );
+
+            if (file) {
               this.addMentionedFile(file);
               new Notice(`已添加: ${file.basename}`);
               return;
-            }
-          }
-        }
-      } catch {
-        // 不是 Obsidian 内部文件，继续尝试其他方法
-      }
-
-      // 方法2: 标准 File API (用于从操作系统拖拽文件)
-      const files = transfer.files;
-      if (!files || files.length === 0) return;
-
-      for (const file of Array.from(files)) {
-        // 在 Electron 环境中，file 对象可能有 path 属性
-        const filePath = (file as any).path || (file as any).name;
-
-        if (!filePath) continue;
-
-        // 尝试在 vault 中查找匹配的文件
-        const vaultFile = this.app.vault.getMarkdownFiles().find((f) =>
-          filePath.endsWith(f.path) ||
-          f.path.endsWith(filePath) ||
-          f.basename === file.name.replace(/\.[^/.]+$/, "")
-        );
-
-        if (vaultFile) {
-          this.addMentionedFile(vaultFile);
-          new Notice(`已添加: ${vaultFile.basename}`);
-        } else {
-          // 文件系统中的文件，尝试读取
-          try {
-            const fs = require("fs");
-            if (fs.existsSync(filePath)) {
-              const content = await fs.promises.readFile(filePath, "utf-8");
-              // 创建临时文件对象（仅用于显示）
+            } else {
+              // 如果在 vault 中找不到，可能是外部文件，创建临时文件对象
               const tempFile = {
-                path: filePath,
-                basename: file.name.replace(/\.[^/.]+$/, ""),
-                // 添加一个特殊标记，表示这是外部文件
-                stat: { size: content.length, mtime: Date.now(), ctime: Date.now() },
+                path: decodedPath,
+                basename: fileName.replace(/\.md$/, ""),
+                extension: "md",
+                stat: { mtime: Date.now(), ctime: Date.now(), size: 0 },
               } as TFile;
               this.addMentionedFile(tempFile);
-              new Notice(`已添加外部文件: ${tempFile.basename}`);
+              new Notice(`已添加: ${tempFile.basename}`);
+              return;
             }
-          } catch (error) {
-            new Notice(`无法读取文件: ${file.name}`);
-            console.error("Failed to read dropped file:", error);
+          }
+        } catch (e) {
+          console.error("Failed to parse Obsidian URI:", e);
+        }
+      }
+
+      // 方法2: 标准 File API（用于从操作系统拖拽文件）
+      const files = transfer.files;
+      console.log("Files from File API:", files);
+
+      if (files && files.length > 0) {
+        for (const file of Array.from(files)) {
+          const filePath = (file as any).path || (file as any).name;
+          console.log("Processing file:", filePath);
+
+          if (!filePath) continue;
+
+          // 尝试在 vault 中查找匹配的文件
+          const vaultFile = this.app.vault.getMarkdownFiles().find((f) =>
+            filePath.endsWith(f.path) ||
+            f.path.endsWith(filePath) ||
+            f.basename === file.name.replace(/\.[^/.]+$/, "")
+          );
+
+          if (vaultFile) {
+            this.addMentionedFile(vaultFile);
+            new Notice(`已添加: ${vaultFile.basename}`);
+          } else {
+            // 外部文件：创建简单的文件对象
+            const tempFile = {
+              path: filePath,
+              basename: file.name.replace(/\.[^/.]+$/, ""),
+              extension: file.name.split('.').pop(),
+              stat: { mtime: Date.now(), ctime: Date.now(), size: 0 },
+            } as TFile;
+            this.addMentionedFile(tempFile);
+            new Notice(`已添加: ${tempFile.basename}`);
           }
         }
       }
@@ -283,7 +305,15 @@ class ClaudeSidebarView extends ItemView {
       return;
     }
     this.inputEl.value = "";
-    this.addMessage({ role: "user", content });
+
+    // 构建用户消息内容（包含被 @ 的文件信息）
+    let messageContent = content;
+    if (this.mentionedFiles.length > 0) {
+      const fileList = this.mentionedFiles.map((f) => `@${f.basename}`).join(", ");
+      messageContent = `${fileList}\n\n${content}`;
+    }
+
+    this.addMessage({ role: "user", content: messageContent });
     this.clearMentionTags(); // 清空 @ 标签
 
     const prompt = await this.buildPrompt(content);
@@ -333,17 +363,28 @@ class ClaudeSidebarView extends ItemView {
       parts.push(`[System]\n${system}`);
     }
 
-    // 新增：包含被 @ 的文件（仅路径引用）
+    // 新增：包含被 @ 的文件（读取内容）
     if (this.mentionedFiles.length > 0) {
-      const filePaths = this.mentionedFiles.map((f) => f.path).join(", ");
-      parts.push(`[@ Referenced files: ${filePaths}]`);
+      for (const file of this.mentionedFiles) {
+        try {
+          const content = await this.app.vault.read(file);
+          parts.push(`[@ ${file.path}]\n${content}`);
+        } catch {
+          parts.push(`[@ ${file.path}]\n(无法读取文件)`);
+        }
+      }
     }
 
-    // "Include current note" 改为 @ 当前文件
+    // "Include current note" 也读取内容
     if (this.includeNoteEl.checked) {
       const activeFile = this.getActiveFile();
       if (activeFile && !this.mentionedFiles.some((f) => f.path === activeFile.path)) {
-        parts.push(`[@ Current note: ${activeFile.path}]`);
+        try {
+          const noteText = await this.app.vault.read(activeFile);
+          parts.push(`[@ Current note: ${activeFile.path}]\n${noteText}`);
+        } catch {
+          parts.push(`[@ Current note: ${activeFile.path}]\n(无法读取文件)`);
+        }
       }
     }
 

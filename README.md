@@ -2,6 +2,14 @@
 
 在 Obsidian 侧边栏里使用 Claude Code 的对话体验，并把生成内容直接写回当前笔记。
 
+## 支持作者
+我是一个穷学生，如果这个插件对你有帮助的话，请尽力支持我。下面是两个打赏二维码，万分感谢！
+
+<div style="display:flex;gap:16px;flex-wrap:wrap;">
+  <img src="asset/wx.png" alt="微信赞赏码" width="220" />
+  <img src="asset/zfb.jpg" alt="支付宝收款码" width="220" />
+</div>
+
 ## 功能亮点
 - 侧边栏原生对话 UI
 - 支持把当前笔记内容作为上下文发送
