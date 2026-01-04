@@ -452,11 +452,6 @@ ${content}`;
           continue;
         try {
           const afterContent = await this.app.vault.read(file);
-          console.log(`\u68C0\u67E5\u6587\u4EF6 ${file.path}:`, {
-            beforeLength: beforeContent.length,
-            afterLength: afterContent.length,
-            changed: afterContent !== beforeContent
-          });
           if (afterContent !== beforeContent) {
             modifications.push({
               filePath: file.path,
@@ -466,10 +461,8 @@ ${content}`;
             });
           }
         } catch (e) {
-          console.error(`\u8BFB\u53D6\u6587\u4EF6 ${file.path} \u5931\u8D25:`, e);
         }
       }
-      console.log(`\u68C0\u6D4B\u5230 ${modifications.length} \u4E2A\u6587\u4EF6\u88AB\u4FEE\u6539`);
       if (modifications.length > 0) {
         pendingMessage.fileModifications = modifications;
       }

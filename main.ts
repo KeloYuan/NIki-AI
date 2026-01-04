@@ -584,11 +584,6 @@ class ClaudeSidebarView extends ItemView {
 
         try {
           const afterContent = await this.app.vault.read(file);
-          console.log(`检查文件 ${file.path}:`, {
-            beforeLength: beforeContent.length,
-            afterLength: afterContent.length,
-            changed: afterContent !== beforeContent
-          });
           if (afterContent !== beforeContent) {
             modifications.push({
               filePath: file.path,
@@ -597,12 +592,11 @@ class ClaudeSidebarView extends ItemView {
               timestamp: beforeTimestamp,
             });
           }
-        } catch (e) {
-          console.error(`读取文件 ${file.path} 失败:`, e);
+        } catch {
+          // 文件读取失败，跳过
         }
       }
 
-      console.log(`检测到 ${modifications.length} 个文件被修改`);
       if (modifications.length > 0) {
         pendingMessage.fileModifications = modifications;
       }
