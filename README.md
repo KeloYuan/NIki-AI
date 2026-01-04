@@ -2,8 +2,8 @@
 
 > 在 Obsidian 侧边栏中使用 Claude Code，享受流畅的 AI 辅助写作体验。
 
-![GitHub release](https://img.shields.io/github/v/release/xiaoyuan-wang/niki-ai)
-![License](https://img.shields.io/github/license/xiaoyuan-wang/niki-ai)
+![GitHub release](https://img.shields.io/github/v/release/KeloYuan/NIki-AI)
+![License](https://img.shields.io/github/license/KeloYuan/NIki-AI)
 
 ## ✨ 功能亮点
 
@@ -21,7 +21,7 @@
 ## 📦 安装
 
 ### 方式一：手动安装
-1. 下载最新版本的 [Release](https://github.com/xiaoyuan-wang/niki-ai/releases)
+1. 下载最新版本的 [Release](https://github.com/KeloYuan/NIki-AI/releases)
 2. 将 `main.js`、`manifest.json`、`styles.css` 放入：
    ```
    你的仓库/.obsidian/plugins/niki-ai/
@@ -30,7 +30,7 @@
 
 ### 方式二：开发构建
 ```bash
-git clone https://github.com/xiaoyuan-wang/niki-ai.git
+git clone https://github.com/KeloYuan/NIki-AI.git
 cd niki-ai
 npm install
 npm run build
@@ -182,4 +182,4 @@ MIT License - 详见 [LICENSE](LICENSE)
 
 ---
 
-Made with ❤️ by [xiaoyuan-wang](https://github.com/xiaoyuan-wang)
+Made with ❤️ by [KeloYuan](https://github.com/KeloYuan)
