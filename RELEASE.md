@@ -1,7 +1,7 @@
 # Niki AI
 
 <!-- Plugin description -->
-Chat with Claude Code in a sidebar and edit notes from Obsidian.
+Chat with Claude Code in a sidebar and edit notes with AI assistance.
 
 ## Usage
 
@@ -24,7 +24,7 @@ Chat with Claude Code in a sidebar and edit notes from Obsidian.
 - **Topic Management**: Organize conversations into topics
 - **Undo Support**: Undo applied changes
 - **Multi-language**: Support for Chinese and English
-- **Theme Adaptive**: Automatically follows Obsidian's light/dark theme
+- **Theme Adaptive**: Automatically follows light/dark theme settings
 
 ## Settings
 
