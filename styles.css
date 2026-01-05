@@ -4,11 +4,7 @@
   height: 100%;
   padding: 12px 12px 8px;
   gap: 10px;
-  background: linear-gradient(
-    180deg,
-    rgba(28, 30, 45, 0.95) 0%,
-    rgba(20, 22, 34, 0.95) 100%
-  );
+  background: var(--background-secondary);
   animation: claude-panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -37,10 +33,10 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 10px 8px;
-  border: 1px solid rgba(130, 135, 180, 0.22);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 12px;
-  background: rgba(18, 20, 30, 0.75);
-  box-shadow: 0 10px 24px rgba(8, 10, 18, 0.4);
+  background: var(--background-primary);
+  box-shadow: var(--shadow-s);
   margin: -10px 0 16px;
   animation: claude-float-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -53,38 +49,30 @@
 }
 
 .claude-code-message {
-  background: linear-gradient(
-    180deg,
-    rgba(30, 33, 50, 0.9) 0%,
-    rgba(22, 25, 38, 0.95) 100%
-  );
+  background: var(--background-secondary);
   border-radius: 10px;
-  border: 1px solid rgba(120, 130, 180, 0.18);
+  border: 1px solid var(--background-modifier-border);
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: 0 8px 24px rgba(10, 12, 20, 0.3);
+  box-shadow: var(--shadow-s);
   animation: claude-message-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .claude-code-message.is-user {
-  background: linear-gradient(
-    180deg,
-    rgba(70, 78, 120, 0.25) 0%,
-    rgba(55, 60, 95, 0.3) 100%
-  );
-  border: 1px solid rgba(120, 140, 210, 0.35);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--interactive-accent);
 }
 
 .claude-code-message.is-error {
-  border: 1px solid rgba(220, 90, 90, 0.45);
-  background: rgba(100, 30, 35, 0.25);
+  border: 1px solid var(--color-red);
+  background: var(--background-modifier-error);
 }
 
 .claude-code-message.is-pending {
-  border: 1px dashed rgba(130, 135, 180, 0.45);
-  background: rgba(60, 65, 95, 0.18);
+  border: 1px dashed var(--background-modifier-border-hover);
+  background: var(--background-modifier-form-field);
 }
 
 .claude-code-message.is-pending .claude-code-content {
@@ -167,18 +155,17 @@
   width: 100%;
   min-height: 78px;
   resize: vertical;
-  background: rgba(12, 14, 24, 0.92);
-  border: 1px solid rgba(130, 135, 180, 0.28);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 12px;
   padding: 12px 12px;
   color: var(--text-normal);
-  box-shadow: inset 0 0 0 1px rgba(10, 12, 20, 0.2);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .claude-code-input:focus {
-  border-color: rgba(130, 160, 255, 0.55);
-  box-shadow: 0 0 0 2px rgba(110, 130, 220, 0.25);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
   outline: none;
 }
 
@@ -191,21 +178,21 @@
 .claude-code-actions button {
   border-radius: 999px;
   padding: 6px 14px;
-  border: 1px solid rgba(120, 130, 170, 0.35);
-  background: rgba(28, 30, 45, 0.8);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-modifier-form-field);
   color: var(--text-normal);
   transition: transform 140ms ease, border-color 140ms ease;
 }
 
 .claude-code-actions button:hover {
   transform: translateY(-1px);
-  border-color: rgba(140, 160, 210, 0.5);
+  border-color: var(--interactive-accent-hover);
 }
 
 .claude-code-actions button.mod-cta {
-  background: rgba(74, 108, 210, 0.95);
-  border-color: rgba(90, 120, 230, 0.9);
-  color: #fff;
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent-hover);
+  color: var(--text-on-accent);
 }
 
 @keyframes claude-panel-in {
@@ -307,30 +294,30 @@
   font-size: 12px;
   border-radius: 999px;
   padding: 4px 10px;
-  border: 1px solid rgba(120, 130, 170, 0.3);
-  background: rgba(26, 28, 40, 0.8);
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-modifier-form-field);
   color: var(--text-normal);
   transition: transform 140ms ease, border-color 140ms ease;
 }
 
 .claude-code-message-actions button:hover {
   transform: translateY(-1px);
-  border-color: rgba(140, 160, 210, 0.45);
+  border-color: var(--interactive-accent-hover);
 }
 
 .claude-code-message-actions button.mod-cta {
-  background: rgba(74, 108, 210, 0.95);
-  border-color: rgba(90, 120, 230, 0.9);
-  color: #fff;
+  background: var(--interactive-accent);
+  border-color: var(--interactive-accent-hover);
+  color: var(--text-on-accent);
 }
 
 /* Diff 容器 */
 .claude-code-diff-container {
   margin-top: 12px;
-  border: 1px solid rgba(130, 135, 180, 0.3);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   overflow: hidden;
-  background: rgba(18, 20, 30, 0.85);
+  background: var(--background-primary);
   animation: claude-diff-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -344,8 +331,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(28, 30, 45, 0.9);
-  border-bottom: 1px solid rgba(130, 135, 180, 0.25);
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .claude-code-diff-file {
@@ -359,7 +346,7 @@
   font-family: monospace;
   padding: 4px 10px;
   border-radius: 12px;
-  background: rgba(40, 45, 65, 0.7);
+  background: var(--background-modifier-form-field);
   color: var(--text-muted);
 }
 
@@ -376,7 +363,7 @@
 .claude-code-diff-line {
   display: flex;
   align-items: stretch;
-  border-bottom: 1px solid rgba(130, 135, 180, 0.1);
+  border-bottom: 1px solid var(--background-modifier-border-hover);
 }
 
 .claude-code-diff-line:last-child {
@@ -385,37 +372,37 @@
 
 /* 添加的行 */
 .claude-code-diff-line.claude-code-diff-added {
-  background: rgba(74, 160, 100, 0.15);
+  background: var(--background-modifier-success);
 }
 
 .claude-code-diff-line.claude-code-diff-added .claude-code-diff-line-num {
-  background: rgba(74, 160, 100, 0.25);
-  color: rgba(120, 200, 140, 0.9);
+  background: var(--color-green);
+  color: var(--text-on-accent);
 }
 
 .claude-code-diff-line.claude-code-diff-added .claude-code-diff-line-content {
-  color: rgba(140, 220, 160, 0.95);
+  color: var(--text-success);
 }
 
 /* 删除的行 */
 .claude-code-diff-line.claude-code-diff-removed {
-  background: rgba(220, 90, 90, 0.15);
+  background: var(--background-modifier-error);
 }
 
 .claude-code-diff-line.claude-code-diff-removed .claude-code-diff-line-num {
-  background: rgba(220, 90, 90, 0.25);
-  color: rgba(240, 120, 120, 0.9);
+  background: var(--color-red);
+  color: var(--text-on-accent);
 }
 
 .claude-code-diff-line.claude-code-diff-removed .claude-code-diff-line-content {
-  color: rgba(250, 140, 140, 0.95);
+  color: var(--text-error);
   text-decoration: line-through;
   opacity: 0.7;
 }
 
 /* 未变更的行 */
 .claude-code-diff-line.claude-code-diff-unchanged {
-  background: rgba(60, 65, 95, 0.1);
+  background: var(--background-secondary);
 }
 
 .claude-code-diff-line.claude-code-diff-unchanged .claude-code-diff-line-num {
@@ -466,16 +453,16 @@
 }
 
 .claude-code-diff-content::-webkit-scrollbar-track {
-  background: rgba(18, 20, 30, 0.5);
+  background: var(--background-primary);
 }
 
 .claude-code-diff-content::-webkit-scrollbar-thumb {
-  background: rgba(130, 135, 180, 0.3);
+  background: var(--background-modifier-border-hover);
   border-radius: 4px;
 }
 
 .claude-code-diff-content::-webkit-scrollbar-thumb:hover {
-  background: rgba(130, 135, 180, 0.5);
+  background: var(--interactive-accent);
 }
 
 /* ============ @ 文件相关样式 ============ */
@@ -500,9 +487,9 @@
   gap: 4px;
   padding: 4px 10px;
   border-radius: 16px;
-  background: rgba(74, 108, 210, 0.2);
-  border: 1px solid rgba(74, 108, 210, 0.4);
-  color: rgba(120, 160, 230, 0.95);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--interactive-accent);
+  color: var(--interactive-accent);
   font-size: 12px;
   font-weight: 500;
   transition: background 160ms ease, border-color 160ms ease;
@@ -510,8 +497,8 @@
 }
 
 .claude-code-mention-tag:hover {
-  background: rgba(74, 108, 210, 0.3);
-  border-color: rgba(74, 108, 210, 0.6);
+  background: var(--background-modifier-border-hover);
+  border-color: var(--interactive-accent-hover);
 }
 
 .claude-code-mention-icon {
@@ -550,10 +537,10 @@
   left: 0;
   right: 0;
   margin-bottom: 8px;
-  background: rgba(28, 30, 45, 0.98);
-  border: 1px solid rgba(130, 135, 180, 0.3);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-l);
   overflow: hidden;
   z-index: 1000;
   animation: claude-picker-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -563,8 +550,8 @@
   width: 100%;
   padding: 10px 14px;
   border: none;
-  border-bottom: 1px solid rgba(130, 135, 180, 0.2);
-  background: rgba(18, 20, 30, 0.9);
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
   color: var(--text-normal);
   font-size: 13px;
   outline: none;
@@ -588,15 +575,15 @@
 }
 
 .claude-code-file-item:hover {
-  background: rgba(60, 65, 95, 0.5);
+  background: var(--background-modifier-hover);
 }
 
 .claude-code-file-item.claude-code-file-active {
-  background: rgba(74, 108, 210, 0.2);
+  background: var(--background-modifier-border-hover);
 }
 
 .claude-code-file-item.claude-code-file-active:hover {
-  background: rgba(74, 108, 210, 0.3);
+  background: var(--interactive-accent);
 }
 
 .claude-code-file-name {
@@ -613,8 +600,8 @@
 
 /* 拖拽状态 */
 .claude-code-input-dragover {
-  border-color: rgba(74, 108, 210, 0.7) !important;
-  background: rgba(74, 108, 210, 0.1) !important;
+  border-color: var(--interactive-accent) !important;
+  background: var(--background-modifier-form-field) !important;
 }
 
 /* 动画 */
@@ -646,11 +633,11 @@
 }
 
 .claude-code-file-list::-webkit-scrollbar-track {
-  background: rgba(18, 20, 30, 0.5);
+  background: var(--background-primary);
 }
 
 .claude-code-file-list::-webkit-scrollbar-thumb {
-  background: rgba(130, 135, 180, 0.3);
+  background: var(--background-modifier-border-hover);
   border-radius: 3px;
 }
 
@@ -661,7 +648,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 4px;
-  border-bottom: 1px solid rgba(130, 135, 180, 0.2);
+  border-bottom: 1px solid var(--background-modifier-border);
   margin-bottom: 8px;
   animation: claude-topic-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
@@ -681,8 +668,8 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-normal);
-  background: rgba(28, 30, 45, 0.85);
-  border: 1px solid rgba(130, 135, 180, 0.35);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 160ms ease;
@@ -690,7 +677,7 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%239da3b8' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
-  background-color: rgba(28, 30, 45, 0.85);
+  background-color: var(--background-modifier-form-field);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -698,25 +685,25 @@
 }
 
 .claude-code-topic-select:hover {
-  border-color: rgba(140, 160, 210, 0.5);
-  background-color: rgba(32, 35, 50, 0.9);
+  border-color: var(--interactive-accent-hover);
+  background-color: var(--background-modifier-hover);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23b4bdcc' d='M6 8.5L2 4.5h8z'/%3E%3C/svg%3E");
 }
 
 .claude-code-topic-select:focus {
   outline: none;
-  border-color: rgba(130, 160, 255, 0.55);
-  box-shadow: 0 0 0 2px rgba(110, 130, 220, 0.25);
-  background-color: rgba(32, 35, 50, 0.95);
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-border-focus);
+  background-color: var(--background-modifier-hover);
 }
 
 /* 下拉选项样式 */
 .claude-code-topic-select option {
-  background: rgba(28, 30, 45, 0.98);
+  background: var(--background-secondary);
   color: var(--text-normal);
   padding: 8px 12px;
   min-height: 36px;
-  border-bottom: 1px solid rgba(130, 135, 180, 0.1);
+  border-bottom: 1px solid var(--background-modifier-border);
 }
 
 .claude-code-topic-select option:last-child {
@@ -724,13 +711,13 @@
 }
 
 .claude-code-topic-select option:checked {
-  background: rgba(74, 108, 210, 0.3);
-  color: rgba(140, 170, 230, 0.95);
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
   font-weight: 600;
 }
 
 .claude-code-topic-select option:hover {
-  background: rgba(60, 65, 95, 0.5);
+  background: var(--background-modifier-hover);
 }
 
 /* 话题操作按钮组 */
@@ -750,8 +737,8 @@
   font-size: 16px;
   font-weight: 600;
   color: var(--text-muted);
-  background: rgba(28, 30, 45, 0.85);
-  border: 1px solid rgba(130, 135, 180, 0.35);
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
   cursor: pointer;
   transition: all 140ms ease;
@@ -761,22 +748,22 @@
 
 .claude-code-topic-btn:hover {
   color: var(--text-normal);
-  background: rgba(60, 65, 95, 0.6);
-  border-color: rgba(140, 160, 210, 0.5);
+  background: var(--background-modifier-hover);
+  border-color: var(--interactive-accent-hover);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-s);
 }
 
 .claude-code-topic-new:hover {
-  color: rgba(120, 200, 140, 0.95);
-  background: rgba(74, 160, 100, 0.2);
-  border-color: rgba(74, 160, 100, 0.5);
+  color: var(--text-success);
+  background: var(--background-modifier-success);
+  border-color: var(--color-green);
 }
 
 .claude-code-topic-delete:hover {
-  color: rgba(240, 120, 120, 0.95);
-  background: rgba(220, 90, 90, 0.2);
-  border-color: rgba(220, 90, 90, 0.5);
+  color: var(--text-error);
+  background: var(--background-modifier-error);
+  border-color: var(--color-red);
 }
 
 .claude-code-topic-btn:disabled {
