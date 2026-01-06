@@ -729,10 +729,20 @@ ${userInput}`);
     if (normalized) {
       const hasPlaceholder = normalized.includes("{prompt}");
       const finalCommand = hasPlaceholder ? replacePlaceholder(normalized, prompt) : normalized;
+      const isWindows = process.platform === "win32";
+      const firstToken = normalized.trim().split(/\s+/)[0].replace(/^["']|["']$/g, "");
+      const isDirectCmdFile = isWindows && (firstToken.toLowerCase().endsWith(".cmd") || firstToken.toLowerCase().endsWith(".bat"));
       return new Promise((resolve, reject) => {
         const child = (0, import_child_process.exec)(
           finalCommand,
-          { cwd, maxBuffer: 1024 * 1024 * 10, env, timeout: timeoutMs },
+          {
+            cwd,
+            maxBuffer: 1024 * 1024 * 10,
+            env,
+            timeout: timeoutMs,
+            shell: isDirectCmdFile
+            // Windows 上直接调用 .cmd/.bat 时需要 shell
+          },
           (error, stdout, stderr) => {
             this.currentProcess = null;
             if (error) {
@@ -755,7 +765,7 @@ ${userInput}`);
       if (isWindows && isCmdFile) {
         return new Promise((resolve, reject) => {
           const child = (0, import_child_process.exec)(
-            `cmd /c "${detectedClaude}"`,
+            `"${detectedClaude}"`,
             { cwd, maxBuffer: 1024 * 1024 * 10, env, timeout: timeoutMs, shell: true },
             (error, stdout, stderr) => {
               this.currentProcess = null;

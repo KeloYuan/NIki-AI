@@ -919,10 +919,25 @@ class ClaudeSidebarView extends ItemView {
         ? replacePlaceholder(normalized, prompt)
         : normalized;
 
+      // Windows 特殊处理：如果命令直接指向 .cmd/.bat 文件，需要 shell: true
+      const isWindows = process.platform === "win32";
+      // 提取命令的第一个 token（去掉引号）
+      const firstToken = normalized.trim().split(/\s+/)[0].replace(/^["']|["']$/g, "");
+      const isDirectCmdFile = isWindows && (
+        firstToken.toLowerCase().endsWith(".cmd") ||
+        firstToken.toLowerCase().endsWith(".bat")
+      );
+
       return new Promise((resolve, reject) => {
         const child = exec(
           finalCommand,
-          { cwd, maxBuffer: 1024 * 1024 * 10, env, timeout: timeoutMs },
+          {
+            cwd,
+            maxBuffer: 1024 * 1024 * 10,
+            env,
+            timeout: timeoutMs,
+            shell: isDirectCmdFile  // Windows 上直接调用 .cmd/.bat 时需要 shell
+          },
           (error, stdout, stderr) => {
             this.currentProcess = null;
             if (error) {
@@ -950,7 +965,7 @@ class ClaudeSidebarView extends ItemView {
       if (isWindows && isCmdFile) {
         return new Promise((resolve, reject) => {
           const child = exec(
-            `cmd /c "${detectedClaude}"`,
+            `"${detectedClaude}"`,
             { cwd, maxBuffer: 1024 * 1024 * 10, env, timeout: timeoutMs, shell: true },
             (error, stdout, stderr) => {
               this.currentProcess = null;

@@ -2,6 +2,19 @@
 
 All notable changes to Niki AI will be documented in this file.
 
+## [4.0.2] - 2026-01-07
+
+### Bug Fixes
+- **Windows compatibility**: Fixed Windows `.cmd`/`.bat` file execution error
+- Removed conflicting `cmd /c` prefix that caused `'cmd'` error
+- Added proper shell handling for batch files on Windows
+- Improved command detection for user-configured Claude paths
+
+### Technical Details
+- Auto-detection branch now uses `shell: true` without redundant `cmd /c`
+- User-configured command branch intelligently detects `.cmd`/`.bat` files
+- Handles quoted paths correctly (e.g., `"C:\Users\...\claude.cmd"`)
+
 ## [4.0.1] - 2026-01-06
 
 ### Fixes
