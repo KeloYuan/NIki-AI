@@ -911,7 +911,7 @@ class ClaudeSidebarView extends ItemView {
     const basePath = this.getVaultBasePath();
     const cwd = this.plugin.settings.workingDir.trim() || basePath || undefined;
     const env = buildEnv(this.plugin.settings.nodePath.trim());
-    const timeoutMs = 120000;
+    const timeoutMs = resolveClaudeTimeoutMs(env);
 
     if (normalized) {
       const hasPlaceholder = normalized.includes("{prompt}");
@@ -1788,6 +1788,42 @@ function buildEnv(preferredNodePath?: string): NodeJS.ProcessEnv {
   const merged = [...(nodeDir ? [nodeDir] : []), ...extra, ...parts];
   env.PATH = Array.from(new Set(merged)).join(path.delimiter);
   return env;
+}
+
+function resolveClaudeTimeoutMs(env: NodeJS.ProcessEnv): number {
+  const defaultTimeout = 300000;
+  const settingsTimeout = readClaudeSettingsTimeoutMs();
+  if (settingsTimeout !== null) {
+    return settingsTimeout;
+  }
+  const envTimeout = parseTimeoutMs(env.API_TIMEOUT_MS);
+  return envTimeout ?? defaultTimeout;
+}
+
+function readClaudeSettingsTimeoutMs(): number | null {
+  const home = os.homedir();
+  const settingsPath = path.join(home, ".claude", "settings.json");
+  try {
+    const raw = fs.readFileSync(settingsPath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      env?: Record<string, string | number>;
+    };
+    const value = parsed.env?.API_TIMEOUT_MS;
+    return parseTimeoutMs(value === undefined ? undefined : String(value));
+  } catch {
+    return null;
+  }
+}
+
+function parseTimeoutMs(value?: string): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
 }
 
 function isExecutable(target: string): boolean {

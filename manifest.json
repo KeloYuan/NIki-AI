@@ -1,7 +1,7 @@
 {
   "id": "niki-ai",
   "name": "Niki AI",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "minAppVersion": "1.5.0",
   "description": "Chat with Claude Code in a sidebar and edit notes with AI assistance.",
   "author": "小元Niki（谢旺涛）",

@@ -2,6 +2,11 @@
 
 All notable changes to Niki AI will be documented in this file.
 
+## [4.0.1] - 2026-01-06
+
+### Fixes
+- Align CLI timeout with Claude Code settings `API_TIMEOUT_MS`, fallback to 5 minutes when unset
+
 ## [4.0.0] - 2025-01-05
 
 ### Major Features
