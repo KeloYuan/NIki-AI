@@ -324,11 +324,11 @@ export default class ClaudeSidebarPlugin extends Plugin {
     });
 
     this.addRibbonIcon("bot", this.t("openSidebarCommand"), () => {
-      this.activateView();
+      void this.activateView();
     });
 
     this.addCommand({
-      id: "open-niki-ai-sidebar",
+      id: "open-sidebar",
       name: this.t("openSidebarCommand"),
       callback: () => this.activateView(),
     });
@@ -337,7 +337,7 @@ export default class ClaudeSidebarPlugin extends Plugin {
   }
 
   onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_CLAUDE);
+    // Don't detach leaves - this resets user's custom positioning
   }
 
   async activateView() {
@@ -347,7 +347,7 @@ export default class ClaudeSidebarPlugin extends Plugin {
       leaf = workspace.getRightLeaf(false);
       await leaf.setViewState({ type: VIEW_TYPE_CLAUDE, active: true });
     }
-    workspace.revealLeaf(leaf);
+    void workspace.revealLeaf(leaf);
   }
 
   async loadSettings() {
@@ -391,7 +391,7 @@ class ClaudeSidebarView extends ItemView {
   // 新增：发送状态管理
   private isSending = false;
   private sendBtn: HTMLButtonElement;
-  private currentProcess: ReturnType<typeof exec> | null = null;
+  private currentProcess: { kill: (signal?: NodeJS.Signals) => void } | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: ClaudeSidebarPlugin) {
     super(leaf);
@@ -515,20 +515,6 @@ class ClaudeSidebarView extends ItemView {
       this.inputEl.removeClass("claude-code-input-dragover");
     });
 
-    // 支持的文本文件扩展名
-    const TEXT_EXTENSIONS = new Set([
-      "md", "txt", "js", "ts", "jsx", "tsx", "py", "rs", "go", "java",
-      "c", "cpp", "h", "hpp", "cs", "php", "rb", "swift", "kt", "scala",
-      "json", "yaml", "yml", "toml", "xml", "html", "css", "scss", "less",
-      "sh", "bash", "zsh", "fish", "ps1", "sql", "graphql", "wsdl", "rss"
-    ]);
-
-    // 检查文件是否为文本类型
-    const isTextFile = (fileName: string): boolean => {
-      const ext = fileName.split('.').pop()?.toLowerCase();
-      return ext ? TEXT_EXTENSIONS.has(ext) : false;
-    };
-
     this.inputEl.addEventListener("drop", async (event) => {
       event.preventDefault();
       this.inputEl.removeClass("claude-code-input-dragover");
@@ -536,9 +522,17 @@ class ClaudeSidebarView extends ItemView {
       const transfer = event.dataTransfer;
       if (!transfer) return;
 
-      console.log("Drop event types:", transfer.types);
+      console.debug("Drop event types:", transfer.types);
 
-      // 检查支持的文本文件扩展名
+      // 支持的文本文件扩展名
+      const TEXT_EXTENSIONS = new Set([
+        "md", "txt", "js", "ts", "jsx", "tsx", "py", "rs", "go", "java",
+        "c", "cpp", "h", "hpp", "cs", "php", "rb", "swift", "kt", "scala",
+        "json", "yaml", "yml", "toml", "xml", "html", "css", "scss", "less",
+        "sh", "bash", "zsh", "fish", "ps1", "sql", "graphql", "wsdl", "rss"
+      ]);
+
+      // 检查是否为文本文件
       const isTextFile = (fileName: string): boolean => {
         if (!fileName) return false;
         const ext = fileName.split('.').pop()?.toLowerCase();
@@ -550,7 +544,7 @@ class ClaudeSidebarView extends ItemView {
       for (const type of transfer.types) {
         try {
           const data = transfer.getData(type);
-          console.log(`Data for type "${type}":`, data);
+          console.debug(`Data for type "${type}":`, data);
 
           // 检查是否是 Obsidian URI
           if (typeof data === "string" && data.startsWith("obsidian://open?")) {
@@ -559,7 +553,7 @@ class ClaudeSidebarView extends ItemView {
               const filePath = url.searchParams.get("file");
               if (filePath) {
                 const decodedPath = decodeURIComponent(filePath);
-                console.log("Obsidian file path:", decodedPath);
+                console.debug("Obsidian file path:", decodedPath);
 
                 // Obsidian URI 中的 file 参数只是 basename（不含扩展名）
                 // 直接在 vault 中查找，不需要检查扩展名
@@ -594,7 +588,7 @@ class ClaudeSidebarView extends ItemView {
                   return;
                 }
 
-                console.log("File not found in vault:", decodedPath);
+                console.debug("File not found in vault:", decodedPath);
               }
             } catch (e) {
               console.error("Failed to parse Obsidian URI:", e);
@@ -607,7 +601,7 @@ class ClaudeSidebarView extends ItemView {
             const abstractFile = this.app.vault.getAbstractFileByPath(data);
             if (abstractFile && "children" in abstractFile) {
               // 是文件夹，扫描并添加
-              const folderFiles = await this.scanFolder(data);
+              const folderFiles = this.scanFolder(data);
 
               if (folderFiles.length > 0) {
                 const folderName = data.split('/').pop() || data;
@@ -645,17 +639,17 @@ class ClaudeSidebarView extends ItemView {
           }
         } catch (e) {
           // 某些类型可能无法读取，忽略
-          console.log(`Cannot read type "${type}":`, e);
+          console.debug(`Cannot read type "${type}":`, e);
         }
       }
 
       // 方法2: 标准 File API（用于从操作系统拖拽文件）
       const files = transfer.files;
-      console.log("Files from File API:", files);
+      console.debug("Files from File API:", files);
 
       if (files && files.length > 0) {
         for (const file of Array.from(files)) {
-          console.log("Processing file:", file.name);
+          console.debug("Processing file:", file.name);
 
           // 检查是否为文本文件
           if (!isTextFile(file.name)) {
@@ -676,19 +670,8 @@ class ClaudeSidebarView extends ItemView {
             });
             new Notice(this.plugin.tf("addedFile", { name: vaultFile.basename }));
           } else {
-            // 外部文件：创建简单的文件对象
-            const tempFile = {
-              path: file.name,
-              basename: file.name.replace(/\.[^/.]+$/, ""),
-              extension: file.name.split('.').pop(),
-              stat: { mtime: Date.now(), ctime: Date.now(), size: 0 },
-            } as TFile;
-            this.addMentionedItem({
-              type: "file",
-              name: tempFile.basename,
-              path: tempFile.path
-            });
-            new Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
+            // 外部文件：不支持直接添加
+            new Notice(this.plugin.t("unsupportedFileType"));
           }
         }
       }
@@ -733,27 +716,31 @@ class ClaudeSidebarView extends ItemView {
       await this.plugin.saveSettings();
     });
 
-    this.sendBtn.addEventListener("click", () => this.handleSend());
+    this.sendBtn.addEventListener("click", () => void this.handleSend());
     clearBtn.addEventListener("click", () => this.clearChat());
 
     // 新增：助手预设事件绑定
-    this.assistantSelectEl.addEventListener("change", async (e) => {
-      const target = e.target as HTMLSelectElement;
-      await this.switchAssistant(target.value);
+    this.assistantSelectEl.addEventListener("change", (e) => {
+      void (async () => {
+        const target = e.target as HTMLSelectElement;
+        await this.switchAssistant(target.value);
+      })();
     });
 
     // 新增：话题事件绑定
-    this.topicSelectEl.addEventListener("change", async (e) => {
-      const target = e.target as HTMLSelectElement;
-      await this.switchTopic(target.value);
+    this.topicSelectEl.addEventListener("change", (e) => {
+      void (async () => {
+        const target = e.target as HTMLSelectElement;
+        await this.switchTopic(target.value);
+      })();
     });
 
-    this.newTopicBtn.addEventListener("click", async () => {
-      await this.createTopic();
+    this.newTopicBtn.addEventListener("click", () => {
+      void this.createTopic();
     });
 
-    this.deleteTopicBtn.addEventListener("click", async () => {
-      await this.deleteTopic();
+    this.deleteTopicBtn.addEventListener("click", () => {
+      void this.deleteTopic();
     });
 
     // 新增：初始化话题
@@ -1164,8 +1151,8 @@ class ClaudeSidebarView extends ItemView {
 
   getVaultBasePath(): string | null {
     const adapter = this.app.vault.adapter;
-    if ("getBasePath" in adapter) {
-      return (adapter as any).getBasePath?.() ?? null;
+    if ("getBasePath" in adapter && typeof adapter.getBasePath === "function") {
+      return (adapter as { getBasePath: () => string }).getBasePath() ?? null;
     }
     return null;
   }
@@ -1184,16 +1171,17 @@ class ClaudeSidebarView extends ItemView {
   private async copyToClipboard(content: string): Promise<void> {
     if (navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(content);
-      return;
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = content;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      void document.execCommand("copy");
+      textarea.remove();
     }
-    const textarea = document.createElement("textarea");
-    textarea.value = content;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
   }
 
   async renderMessages() {
@@ -1219,7 +1207,7 @@ class ClaudeSidebarView extends ItemView {
       if (message.isPending) {
         wrapper.addClass("is-pending");
       }
-      const roleEl = wrapper.createDiv({
+      wrapper.createDiv({
         text:
           message.role === "user"
             ? this.plugin.t("roleYou")
@@ -1251,9 +1239,11 @@ class ClaudeSidebarView extends ItemView {
       const copyBtn = actions.createEl("button", {
         text: this.plugin.t("copy"),
       });
-      copyBtn.addEventListener("click", async () => {
-        await this.copyToClipboard(message.content);
-        new Notice(this.plugin.t("copied"));
+      copyBtn.addEventListener("click", () => {
+        void (async () => {
+          await this.copyToClipboard(message.content);
+          new Notice(this.plugin.t("copied"));
+        })();
       });
 
       if (message.role === "assistant" && !message.isError && !message.isPending) {
@@ -1263,8 +1253,8 @@ class ClaudeSidebarView extends ItemView {
             text: this.plugin.t("undoChanges"),
             cls: "claude-code-undo-btn",
           });
-          undoBtn.addEventListener("click", async () => {
-            await this.undoFileModifications(message);
+          undoBtn.addEventListener("click", () => {
+            void this.undoFileModifications(message);
           });
         }
 
@@ -1280,9 +1270,9 @@ class ClaudeSidebarView extends ItemView {
               ? this.plugin.t("changesApplied")
               : this.plugin.t("viewChanges"),
           });
-          viewChangesBtn.addEventListener("click", () =>
-            this.toggleDiffView(wrapper, message)
-          );
+          viewChangesBtn.addEventListener("click", () => {
+            void this.toggleDiffView(wrapper, message);
+          });
 
           // 显示 "Apply all" 按钮
           const hasUnapplied = message.codeChanges.some((c) => !c.applied);
@@ -1291,18 +1281,18 @@ class ClaudeSidebarView extends ItemView {
               text: this.plugin.t("applyAllChanges"),
               cls: "mod-cta",
             });
-            applyBtn.addEventListener("click", () =>
-              this.applyAllChanges(message)
-            );
+            applyBtn.addEventListener("click", () => {
+              void this.applyAllChanges(message);
+            });
           }
         } else if (!message.fileModifications || message.fileModifications.length === 0) {
           // 只有在没有文件修改时才显示 "Insert to note" 按钮
           const insertBtn = actions.createEl("button", {
             text: this.plugin.t("insertToNote"),
           });
-          insertBtn.addEventListener("click", () =>
-            this.insertIntoActiveFile(message.content)
-          );
+          insertBtn.addEventListener("click", () => {
+            void this.insertIntoActiveFile(message.content);
+          });
         }
       }
     }
@@ -1435,10 +1425,10 @@ class ClaudeSidebarView extends ItemView {
   }
 
   // 切换 diff 视图
-  private async toggleDiffView(
+  private toggleDiffView(
     wrapper: HTMLElement,
     message: ChatMessage
-  ): Promise<void> {
+  ): void {
     let diffContainer = wrapper.querySelector(
       ".claude-code-diff-container"
     ) as HTMLElement;
@@ -1650,7 +1640,7 @@ class ClaudeSidebarView extends ItemView {
   }
 
   // 扫描文件夹，获取所有支持的文本文件
-  private async scanFolder(folderPath: string): Promise<TFile[]> {
+  private scanFolder(folderPath: string): TFile[] {
     const TEXT_EXTENSIONS = new Set([
       "md", "txt", "js", "ts", "jsx", "tsx", "py", "rs", "go", "java",
       "c", "cpp", "h", "hpp", "cs", "php", "rb", "swift", "kt", "scala",
@@ -1713,7 +1703,7 @@ class ClaudeSidebarView extends ItemView {
 
   // 生成话题ID
   private generateTopicId(): string {
-    return `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `topic_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   // 创建新话题
@@ -1811,7 +1801,7 @@ class ClaudeSidebarView extends ItemView {
   }
 
   // 自动生成话题标题
-  private async generateTopicTitle(topic: ChatTopic): Promise<string> {
+  private generateTopicTitle(topic: ChatTopic): string {
     const firstUserMessage = topic.messages.find(m => m.role === "user");
     if (!firstUserMessage) {
       return "新话题";
@@ -1835,7 +1825,7 @@ class ClaudeSidebarView extends ItemView {
     if (!topic) return;
 
     if (topic.title === "新话题") {
-      topic.title = await this.generateTopicTitle(topic);
+      topic.title = this.generateTopicTitle(topic);
       await this.plugin.saveSettings();
       this.renderTopicSelector();
     }
@@ -2237,7 +2227,7 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
       cls: "claude-code-about-header"
     });
 
-    const assistantDesc = containerEl.createEl("p", {
+    containerEl.createEl("p", {
       text: this.plugin.t("assistantSectionDesc"),
       cls: "setting-item-description"
     });
@@ -2335,7 +2325,7 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
         promptTextarea.style.fontSize = "12px";
 
         // 使用防抖，避免频繁保存
-        let saveTimeout: NodeJS.Timeout | null = null;
+        let saveTimeout: ReturnType<typeof setTimeout> | null = null;
         promptTextarea.addEventListener("input", () => {
           // 实时更新到内存
           assistant.systemPrompt = promptTextarea.value;
@@ -2366,7 +2356,7 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
           .setCta()
           .onClick(async () => {
             const newAssistant: AssistantPreset = {
-              id: `assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              id: `assistant_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
               name: this.plugin.t("assistantDefaultName"),
               systemPrompt: this.plugin.t("assistantDefaultPrompt"),
             };
@@ -2399,7 +2389,7 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
     emailDiv.createSpan({
       text: `${this.plugin.t("aboutEmail")}: `,
     });
-    const emailLink = emailDiv.createEl("a", {
+    emailDiv.createEl("a", {
       text: "sloanenyra@gmail.com",
       href: "mailto:sloanenyra@gmail.com",
       cls: "claude-code-about-link"
@@ -2542,31 +2532,6 @@ function longestCommonSubsequence(arr1: string[], arr2: string[]): string[] {
   }
 
   return lcs;
-}
-
-/**
- * 转义字符串以便安全地作为 shell 参数使用
- * 使用单引号包裹，对内部的单引号进行特殊处理
- */
-function escapeShellArg(arg: string): string {
-  // 单引号内所有字符都按字面意思处理
-  // 唯一的问题是单引号本身，需要结束单引号，用反斜杠转义单引号，再开始新的单引号
-  // 例如: "it's" -> 'it'\''s'
-  return "'" + arg.replace(/'/g, "'\\''") + "'";
-}
-
-/**
- * 转义双引号字符串内的特殊字符
- */
-function escapeDoubleQuotedArg(arg: string): string {
-  // 在双引号内需要转义: $ ` " \ 和换行符
-  return arg
-    .replace(/\\/g, '\\\\')  // 反斜杠必须先转义
-    .replace(/\$/g, '\\$')    // 美元符号
-    .replace(/`/g, '\\`')     // 反引号
-    .replace(/"/g, '\\"')     // 双引号
-    .replace(/\n/g, '\\n')    // 换行符
-    .replace(/\r/g, '\\r');   // 回车符
 }
 
 /**

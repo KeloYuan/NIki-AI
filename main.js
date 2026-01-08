@@ -229,17 +229,16 @@ var ClaudeSidebarPlugin = class extends import_obsidian.Plugin {
       return new ClaudeSidebarView(leaf, this);
     });
     this.addRibbonIcon("bot", this.t("openSidebarCommand"), () => {
-      this.activateView();
+      void this.activateView();
     });
     this.addCommand({
-      id: "open-niki-ai-sidebar",
+      id: "open-sidebar",
       name: this.t("openSidebarCommand"),
       callback: () => this.activateView()
     });
     this.addSettingTab(new ClaudeSidebarSettingTab(this.app, this));
   }
   onunload() {
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_CLAUDE);
   }
   async activateView() {
     const { workspace } = this.app;
@@ -248,7 +247,7 @@ var ClaudeSidebarPlugin = class extends import_obsidian.Plugin {
       leaf = workspace.getRightLeaf(false);
       await leaf.setViewState({ type: VIEW_TYPE_CLAUDE, active: true });
     }
-    workspace.revealLeaf(leaf);
+    void workspace.revealLeaf(leaf);
   }
   async loadSettings() {
     this.settings = Object.assign(
@@ -367,51 +366,6 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
     this.inputEl.addEventListener("dragleave", () => {
       this.inputEl.removeClass("claude-code-input-dragover");
     });
-    const TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
-      "md",
-      "txt",
-      "js",
-      "ts",
-      "jsx",
-      "tsx",
-      "py",
-      "rs",
-      "go",
-      "java",
-      "c",
-      "cpp",
-      "h",
-      "hpp",
-      "cs",
-      "php",
-      "rb",
-      "swift",
-      "kt",
-      "scala",
-      "json",
-      "yaml",
-      "yml",
-      "toml",
-      "xml",
-      "html",
-      "css",
-      "scss",
-      "less",
-      "sh",
-      "bash",
-      "zsh",
-      "fish",
-      "ps1",
-      "sql",
-      "graphql",
-      "wsdl",
-      "rss"
-    ]);
-    const isTextFile = (fileName) => {
-      var _a;
-      const ext = (_a = fileName.split(".").pop()) == null ? void 0 : _a.toLowerCase();
-      return ext ? TEXT_EXTENSIONS.has(ext) : false;
-    };
     this.inputEl.addEventListener("drop", async (event) => {
       var _a;
       event.preventDefault();
@@ -419,8 +373,48 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
       const transfer = event.dataTransfer;
       if (!transfer)
         return;
-      console.log("Drop event types:", transfer.types);
-      const isTextFile2 = (fileName) => {
+      console.debug("Drop event types:", transfer.types);
+      const TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
+        "md",
+        "txt",
+        "js",
+        "ts",
+        "jsx",
+        "tsx",
+        "py",
+        "rs",
+        "go",
+        "java",
+        "c",
+        "cpp",
+        "h",
+        "hpp",
+        "cs",
+        "php",
+        "rb",
+        "swift",
+        "kt",
+        "scala",
+        "json",
+        "yaml",
+        "yml",
+        "toml",
+        "xml",
+        "html",
+        "css",
+        "scss",
+        "less",
+        "sh",
+        "bash",
+        "zsh",
+        "fish",
+        "ps1",
+        "sql",
+        "graphql",
+        "wsdl",
+        "rss"
+      ]);
+      const isTextFile = (fileName) => {
         var _a2;
         if (!fileName)
           return false;
@@ -432,14 +426,14 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
       for (const type of transfer.types) {
         try {
           const data = transfer.getData(type);
-          console.log(`Data for type "${type}":`, data);
+          console.debug(`Data for type "${type}":`, data);
           if (typeof data === "string" && data.startsWith("obsidian://open?")) {
             try {
               const url = new URL(data);
               const filePath = url.searchParams.get("file");
               if (filePath) {
                 const decodedPath = decodeURIComponent(filePath);
-                console.log("Obsidian file path:", decodedPath);
+                console.debug("Obsidian file path:", decodedPath);
                 const fileName = decodedPath.split("/").pop() || decodedPath;
                 const file = this.app.vault.getMarkdownFiles().find(
                   (f) => f.basename === fileName || f.path === decodedPath || f.path.endsWith(decodedPath)
@@ -457,7 +451,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
                 const textFile = allFiles.find(
                   (f) => f.basename === fileName || f.path === decodedPath || f.path.endsWith(decodedPath)
                 );
-                if (textFile && isTextFile2(textFile.path)) {
+                if (textFile && isTextFile(textFile.path)) {
                   this.addMentionedItem({
                     type: "file",
                     name: textFile.basename,
@@ -466,7 +460,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
                   new import_obsidian.Notice(this.plugin.tf("addedFile", { name: textFile.basename }));
                   return;
                 }
-                console.log("File not found in vault:", decodedPath);
+                console.debug("File not found in vault:", decodedPath);
               }
             } catch (e) {
               console.error("Failed to parse Obsidian URI:", e);
@@ -475,7 +469,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
           if (typeof data === "string") {
             const abstractFile = this.app.vault.getAbstractFileByPath(data);
             if (abstractFile && "children" in abstractFile) {
-              const folderFiles = await this.scanFolder(data);
+              const folderFiles = this.scanFolder(data);
               if (folderFiles.length > 0) {
                 const folderName = data.split("/").pop() || data;
                 this.addMentionedItem({
@@ -491,7 +485,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
                 return;
               }
             }
-            if (data.endsWith(".md") || isTextFile2(data)) {
+            if (data.endsWith(".md") || isTextFile(data)) {
               const fileName = data.split(/[/\\]/).pop() || data;
               const file = this.app.vault.getMarkdownFiles().find(
                 (f) => f.path === data || f.path.endsWith(data) || f.basename === fileName.replace(/\.[^/.]+$/, "")
@@ -508,15 +502,15 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
             }
           }
         } catch (e) {
-          console.log(`Cannot read type "${type}":`, e);
+          console.debug(`Cannot read type "${type}":`, e);
         }
       }
       const files = transfer.files;
-      console.log("Files from File API:", files);
+      console.debug("Files from File API:", files);
       if (files && files.length > 0) {
         for (const file of Array.from(files)) {
-          console.log("Processing file:", file.name);
-          if (!isTextFile2(file.name)) {
+          console.debug("Processing file:", file.name);
+          if (!isTextFile(file.name)) {
             new import_obsidian.Notice(this.plugin.t("unsupportedFileType"));
             continue;
           }
@@ -531,18 +525,7 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
             });
             new import_obsidian.Notice(this.plugin.tf("addedFile", { name: vaultFile.basename }));
           } else {
-            const tempFile = {
-              path: file.name,
-              basename: file.name.replace(/\.[^/.]+$/, ""),
-              extension: file.name.split(".").pop(),
-              stat: { mtime: Date.now(), ctime: Date.now(), size: 0 }
-            };
-            this.addMentionedItem({
-              type: "file",
-              name: tempFile.basename,
-              path: tempFile.path
-            });
-            new import_obsidian.Notice(this.plugin.tf("addedFile", { name: tempFile.basename }));
+            new import_obsidian.Notice(this.plugin.t("unsupportedFileType"));
           }
         }
       }
@@ -576,21 +559,25 @@ var ClaudeSidebarView = class extends import_obsidian.ItemView {
       this.plugin.settings.includeCurrentNote = this.includeNoteEl.checked;
       await this.plugin.saveSettings();
     });
-    this.sendBtn.addEventListener("click", () => this.handleSend());
+    this.sendBtn.addEventListener("click", () => void this.handleSend());
     clearBtn.addEventListener("click", () => this.clearChat());
-    this.assistantSelectEl.addEventListener("change", async (e) => {
-      const target = e.target;
-      await this.switchAssistant(target.value);
+    this.assistantSelectEl.addEventListener("change", (e) => {
+      void (async () => {
+        const target = e.target;
+        await this.switchAssistant(target.value);
+      })();
     });
-    this.topicSelectEl.addEventListener("change", async (e) => {
-      const target = e.target;
-      await this.switchTopic(target.value);
+    this.topicSelectEl.addEventListener("change", (e) => {
+      void (async () => {
+        const target = e.target;
+        await this.switchTopic(target.value);
+      })();
     });
-    this.newTopicBtn.addEventListener("click", async () => {
-      await this.createTopic();
+    this.newTopicBtn.addEventListener("click", () => {
+      void this.createTopic();
     });
-    this.deleteTopicBtn.addEventListener("click", async () => {
-      await this.deleteTopic();
+    this.deleteTopicBtn.addEventListener("click", () => {
+      void this.deleteTopic();
     });
     if (this.plugin.settings.topics.length === 0) {
       await this.createTopic();
@@ -933,10 +920,10 @@ ${userInput}`);
     return file != null ? file : null;
   }
   getVaultBasePath() {
-    var _a, _b;
+    var _a;
     const adapter = this.app.vault.adapter;
-    if ("getBasePath" in adapter) {
-      return (_b = (_a = adapter.getBasePath) == null ? void 0 : _a.call(adapter)) != null ? _b : null;
+    if ("getBasePath" in adapter && typeof adapter.getBasePath === "function") {
+      return (_a = adapter.getBasePath()) != null ? _a : null;
     }
     return null;
   }
@@ -957,16 +944,16 @@ ${content.trim()}
     var _a;
     if ((_a = navigator == null ? void 0 : navigator.clipboard) == null ? void 0 : _a.writeText) {
       await navigator.clipboard.writeText(content);
-      return;
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = content;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      void document.execCommand("copy");
+      textarea.remove();
     }
-    const textarea = document.createElement("textarea");
-    textarea.value = content;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
   }
   async renderMessages() {
     if (!this.loaded) {
@@ -989,7 +976,7 @@ ${content.trim()}
       if (message.isPending) {
         wrapper.addClass("is-pending");
       }
-      const roleEl = wrapper.createDiv({
+      wrapper.createDiv({
         text: message.role === "user" ? this.plugin.t("roleYou") : this.plugin.t("roleNiki"),
         cls: "claude-code-role"
       });
@@ -1016,9 +1003,11 @@ ${content.trim()}
       const copyBtn = actions.createEl("button", {
         text: this.plugin.t("copy")
       });
-      copyBtn.addEventListener("click", async () => {
-        await this.copyToClipboard(message.content);
-        new import_obsidian.Notice(this.plugin.t("copied"));
+      copyBtn.addEventListener("click", () => {
+        void (async () => {
+          await this.copyToClipboard(message.content);
+          new import_obsidian.Notice(this.plugin.t("copied"));
+        })();
       });
       if (message.role === "assistant" && !message.isError && !message.isPending) {
         if (message.fileModifications && message.fileModifications.length > 0) {
@@ -1026,8 +1015,8 @@ ${content.trim()}
             text: this.plugin.t("undoChanges"),
             cls: "claude-code-undo-btn"
           });
-          undoBtn.addEventListener("click", async () => {
-            await this.undoFileModifications(message);
+          undoBtn.addEventListener("click", () => {
+            void this.undoFileModifications(message);
           });
         }
         if (!message.codeChanges) {
@@ -1037,29 +1026,26 @@ ${content.trim()}
           const viewChangesBtn = actions.createEl("button", {
             text: message.codeChanges.some((c) => c.applied) ? this.plugin.t("changesApplied") : this.plugin.t("viewChanges")
           });
-          viewChangesBtn.addEventListener(
-            "click",
-            () => this.toggleDiffView(wrapper, message)
-          );
+          viewChangesBtn.addEventListener("click", () => {
+            void this.toggleDiffView(wrapper, message);
+          });
           const hasUnapplied = message.codeChanges.some((c) => !c.applied);
           if (hasUnapplied) {
             const applyBtn = actions.createEl("button", {
               text: this.plugin.t("applyAllChanges"),
               cls: "mod-cta"
             });
-            applyBtn.addEventListener(
-              "click",
-              () => this.applyAllChanges(message)
-            );
+            applyBtn.addEventListener("click", () => {
+              void this.applyAllChanges(message);
+            });
           }
         } else if (!message.fileModifications || message.fileModifications.length === 0) {
           const insertBtn = actions.createEl("button", {
             text: this.plugin.t("insertToNote")
           });
-          insertBtn.addEventListener(
-            "click",
-            () => this.insertIntoActiveFile(message.content)
-          );
+          insertBtn.addEventListener("click", () => {
+            void this.insertIntoActiveFile(message.content);
+          });
         }
       }
     }
@@ -1165,7 +1151,7 @@ ${content.trim()}
     );
   }
   // 切换 diff 视图
-  async toggleDiffView(wrapper, message) {
+  toggleDiffView(wrapper, message) {
     let diffContainer = wrapper.querySelector(
       ".claude-code-diff-container"
     );
@@ -1330,7 +1316,7 @@ ${content.trim()}
     this.renderMentionTags();
   }
   // 扫描文件夹，获取所有支持的文本文件
-  async scanFolder(folderPath) {
+  scanFolder(folderPath) {
     var _a;
     const TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
       "md",
@@ -1414,7 +1400,7 @@ ${content.trim()}
   // ============ 话题管理相关方法 ============
   // 生成话题ID
   generateTopicId() {
-    return `topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `topic_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
   // 创建新话题
   async createTopic() {
@@ -1492,7 +1478,7 @@ ${content.trim()}
     this.renderTopicSelector();
   }
   // 自动生成话题标题
-  async generateTopicTitle(topic) {
+  generateTopicTitle(topic) {
     const firstUserMessage = topic.messages.find((m) => m.role === "user");
     if (!firstUserMessage) {
       return "\u65B0\u8BDD\u9898";
@@ -1510,7 +1496,7 @@ ${content.trim()}
     if (!topic)
       return;
     if (topic.title === "\u65B0\u8BDD\u9898") {
-      topic.title = await this.generateTopicTitle(topic);
+      topic.title = this.generateTopicTitle(topic);
       await this.plugin.saveSettings();
       this.renderTopicSelector();
     }
@@ -1817,7 +1803,7 @@ var ClaudeSidebarSettingTab = class extends import_obsidian.PluginSettingTab {
       text: this.plugin.t("assistantSectionName"),
       cls: "claude-code-about-header"
     });
-    const assistantDesc = containerEl.createEl("p", {
+    containerEl.createEl("p", {
       text: this.plugin.t("assistantSectionDesc"),
       cls: "setting-item-description"
     });
@@ -1917,7 +1903,7 @@ var ClaudeSidebarSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).addButton(
       (button) => button.setButtonText(this.plugin.t("assistantAddNew")).setCta().onClick(async () => {
         const newAssistant = {
-          id: `assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `assistant_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
           name: this.plugin.t("assistantDefaultName"),
           systemPrompt: this.plugin.t("assistantDefaultPrompt")
         };
@@ -1941,7 +1927,7 @@ var ClaudeSidebarSettingTab = class extends import_obsidian.PluginSettingTab {
     emailDiv.createSpan({
       text: `${this.plugin.t("aboutEmail")}: `
     });
-    const emailLink = emailDiv.createEl("a", {
+    emailDiv.createEl("a", {
       text: "sloanenyra@gmail.com",
       href: "mailto:sloanenyra@gmail.com",
       cls: "claude-code-about-link"
