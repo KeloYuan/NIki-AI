@@ -1036,11 +1036,25 @@ class ClaudeSidebarView extends ItemView {
     const env = buildEnv(this.plugin.settings.nodePath.trim());
     const timeoutMs = resolveClaudeTimeoutMs(env);
 
+    // Debug logging
+    console.debug("[Niki AI] Running Claude command:");
+    console.debug("  Configured:", configured || "(empty)");
+    console.debug("  Claude path:", preferredClaude || "(auto-detect)");
+    console.debug("  Node path:", this.plugin.settings.nodePath.trim() || "(auto-detect)");
+    console.debug("  Detected claude:", detectedClaude || "(not found)");
+    console.debug("  Normalized:", normalized || "(empty)");
+    console.debug("  Working dir:", cwd || "(default)");
+    console.debug("  PATH:", env.PATH ? env.PATH.substring(0, 200) + "..." : "(not set)");
+
     if (normalized) {
       const hasPlaceholder = normalized.includes("{prompt}");
       const finalCommand = hasPlaceholder
         ? replacePlaceholder(normalized, prompt)
         : normalized;
+
+      console.debug("[Niki AI] Using configured command");
+      console.debug("  Has placeholder:", hasPlaceholder);
+      console.debug("  Final command:", finalCommand.substring(0, 200) + (finalCommand.length > 200 ? "..." : ""));
 
       // Windows 特殊处理：如果命令直接指向 .cmd/.bat 文件，需要 shell: true
       const isWindows = process.platform === "win32";
@@ -1064,9 +1078,16 @@ class ClaudeSidebarView extends ItemView {
           (error, stdout, stderr) => {
             this.currentProcess = null;
             if (error) {
+              console.error("[Niki AI] Command failed:");
+              console.error("  Error code:", error.code);
+              console.error("  Error message:", error.message);
+              console.error("  Signal:", error.signal);
+              console.error("  Stderr:", stderr);
+              console.error("  Stdout:", stdout ? stdout.substring(0, 500) : "(empty)");
               reject(new Error(stderr || error.message));
               return;
             }
+            console.debug("[Niki AI] Command succeeded, output length:", (stdout || stderr).length);
             resolve(stdout || stderr);
           }
         );
@@ -1074,6 +1095,7 @@ class ClaudeSidebarView extends ItemView {
         this.currentProcess = child;
 
         if (!hasPlaceholder && child.stdin) {
+          console.debug("[Niki AI] Writing prompt to stdin, length:", prompt.length);
           child.stdin.write(prompt);
           child.stdin.end();
         }
@@ -1081,11 +1103,14 @@ class ClaudeSidebarView extends ItemView {
     }
 
     if (detectedClaude) {
+      console.debug("[Niki AI] Using auto-detected Claude:", detectedClaude);
+
       const isWindows = process.platform === "win32";
       const isCmdFile = detectedClaude.endsWith(".cmd") || detectedClaude.endsWith(".bat");
 
       // Windows 上 .cmd/.bat 文件需要使用 cmd /c 执行
       if (isWindows && isCmdFile) {
+        console.debug("[Niki AI] Windows .cmd file detected, using shell execution");
         return new Promise((resolve, reject) => {
           const child = exec(
             `"${detectedClaude}"`,
@@ -1093,9 +1118,16 @@ class ClaudeSidebarView extends ItemView {
             (error, stdout, stderr) => {
               this.currentProcess = null;
               if (error) {
+                console.error("[Niki AI] Command failed (Windows .cmd):");
+                console.error("  Error code:", error.code);
+                console.error("  Error message:", error.message);
+                console.error("  Signal:", error.signal);
+                console.error("  Stderr:", stderr);
+                console.error("  Stdout:", stdout ? stdout.substring(0, 500) : "(empty)");
                 reject(new Error(stderr || error.message));
                 return;
               }
+              console.debug("[Niki AI] Command succeeded, output length:", (stdout || stderr).length);
               resolve(stdout || stderr);
             }
           );
@@ -1113,6 +1145,12 @@ class ClaudeSidebarView extends ItemView {
         : "";
       const command = useNodeShim ? systemNode || process.execPath : detectedClaude;
       const args = useNodeShim ? [detectedClaude] : [];
+
+      console.debug("[Niki AI] Execution details:");
+      console.debug("  Use Node shim:", useNodeShim);
+      console.debug("  Command:", command);
+      console.debug("  Args:", args);
+
       return new Promise((resolve, reject) => {
         const child = execFile(
           command,
@@ -1121,9 +1159,16 @@ class ClaudeSidebarView extends ItemView {
           (error, stdout, stderr) => {
             this.currentProcess = null;
             if (error) {
+              console.error("[Niki AI] Command failed (execFile):");
+              console.error("  Error code:", error.code);
+              console.error("  Error message:", error.message);
+              console.error("  Signal:", error.signal);
+              console.error("  Stderr:", stderr);
+              console.error("  Stdout:", stdout ? stdout.substring(0, 500) : "(empty)");
               reject(new Error(stderr || error.message));
               return;
             }
+            console.debug("[Niki AI] Command succeeded, output length:", (stdout || stderr).length);
             resolve(stdout || stderr);
           }
         );
@@ -1135,6 +1180,10 @@ class ClaudeSidebarView extends ItemView {
         }
       });
     }
+
+    console.error("[Niki AI] Claude CLI not found!");
+    console.error("  Configured:", configured || "(empty)");
+    console.error("  Preferred path:", preferredClaude || "(empty)");
 
     new Notice(
       this.plugin.t("claudeNotFoundNotice")
