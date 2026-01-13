@@ -80,6 +80,8 @@ var I18N = {
     settingClaudePathDesc: "Claude CLI \u53EF\u6267\u884C\u6587\u4EF6\u7684\u5B8C\u6574\u8DEF\u5F84\uFF08Windows \u53EF\u586B claude.cmd\uFF09\u3002\u7559\u7A7A\u5219\u81EA\u52A8\u68C0\u6D4B\u3002",
     settingNodePathName: "Node path",
     settingNodePathDesc: "Node \u53EF\u6267\u884C\u6587\u4EF6\u7684\u5B8C\u6574\u8DEF\u5F84\uFF08Windows \u53EF\u586B node.exe\uFF09\u3002\u7559\u7A7A\u5219\u81EA\u52A8\u68C0\u6D4B\u3002",
+    settingGitBashPathName: "Git Bash path",
+    settingGitBashPathDesc: "Git Bash \u53EF\u6267\u884C\u6587\u4EF6\u7684\u5B8C\u6574\u8DEF\u5F84\uFF08Windows \u4F7F\u7528 shell \u6267\u884C\u65F6\u9700\u8981\uFF09\u3002\u7559\u7A7A\u5219\u81EA\u52A8\u68C0\u6D4B\u3002",
     pathHelpButton: "\u5E2E\u52A9",
     pathHelpTitle: "\u8DEF\u5F84\u5E2E\u52A9",
     pathHelpBody: "\u5982\u4F55\u627E\u5230 Claude / Node \u7684\u5B8C\u6574\u8DEF\u5F84\uFF1A\n\nWindows\uFF08\u63A8\u8350\uFF09:\n1) \u6253\u5F00 cmd \u6216 PowerShell\n2) \u8FD0\u884C: where claude\n3) \u8FD0\u884C: where node\n\n\u5982\u679C\u6CA1\u6709\u8F93\u51FA\uFF0C\u53EF\u5C1D\u8BD5\u4EE5\u4E0B\u5E38\u89C1\u8DEF\u5F84\uFF1A\n- %APPDATA%\\npm\\claude.cmd\n- C:\\Program Files\\nodejs\\node.exe\n- C:\\Program Files (x86)\\nodejs\\node.exe\n- %LOCALAPPDATA%\\Programs\\nodejs\\node.exe\n- %NVM_SYMLINK%\\node.exe\n\nmacOS/Linux:\n- \u8FD0\u884C: which claude\n- \u8FD0\u884C: which node",
@@ -156,6 +158,8 @@ var I18N = {
     settingClaudePathDesc: "Full path to the Claude CLI executable (on Windows, use claude.cmd). Leave empty to auto-detect.",
     settingNodePathName: "Node path",
     settingNodePathDesc: "Full path to the Node executable (on Windows, use node.exe). Leave empty to auto-detect.",
+    settingGitBashPathName: "Git Bash path",
+    settingGitBashPathDesc: "Full path to the Git Bash executable (needed for shell execution on Windows). Leave empty to auto-detect.",
     pathHelpButton: "Help",
     pathHelpTitle: "Path Help",
     pathHelpBody: "How to find the full paths for Claude / Node:\n\nWindows (recommended):\n1) Open cmd or PowerShell\n2) Run: where claude\n3) Run: where node\n\nIf there is no output, try these common locations:\n- %APPDATA%\\npm\\claude.cmd\n- C:\\Program Files\\nodejs\\node.exe\n- C:\\Program Files (x86)\\nodejs\\node.exe\n- %LOCALAPPDATA%\\Programs\\nodejs\\node.exe\n- %NVM_SYMLINK%\\node.exe\n\nmacOS/Linux:\n- Run: which claude\n- Run: which node",
@@ -207,6 +211,7 @@ var DEFAULT_SETTINGS = {
   claudeCommand: "",
   claudePath: "",
   nodePath: "",
+  gitBashPath: "",
   defaultPrompt: "You are Niki AI embedded in Obsidian (powered by Claude Code). Help me edit Markdown notes.\nWhen you propose changes, be explicit and keep the style consistent.",
   workingDir: "",
   language: "zh-CN",
@@ -824,12 +829,14 @@ ${userInput}`);
     const detectedClaude = configured ? "" : findClaudeBinary(preferredClaude);
     const basePath = this.getVaultBasePath();
     const cwd = this.plugin.settings.workingDir.trim() || basePath || void 0;
-    const env = buildEnv(this.plugin.settings.nodePath.trim());
+    const gitBashPath = this.plugin.settings.gitBashPath.trim();
+    const env = buildEnv(this.plugin.settings.nodePath.trim(), gitBashPath);
     const timeoutMs = resolveClaudeTimeoutMs(env);
     console.debug("[Niki AI] Running Claude command:");
     console.debug("  Configured:", configured || "(empty)");
     console.debug("  Claude path:", preferredClaude || "(auto-detect)");
     console.debug("  Node path:", this.plugin.settings.nodePath.trim() || "(auto-detect)");
+    console.debug("  Git Bash path:", gitBashPath || "(auto-detect/not set)");
     console.debug("  Detected claude:", detectedClaude || "(not found)");
     console.debug("  Normalized:", normalized || "(empty)");
     console.debug("  Working dir:", cwd || "(default)");
@@ -843,6 +850,7 @@ ${userInput}`);
       const isWindows = process.platform === "win32";
       const firstToken = normalized.trim().split(/\s+/)[0].replace(/^["']|["']$/g, "");
       const isDirectCmdFile = isWindows && (firstToken.toLowerCase().endsWith(".cmd") || firstToken.toLowerCase().endsWith(".bat"));
+      const shell = gitBashPath && isDirectCmdFile ? gitBashPath : isDirectCmdFile;
       return new Promise((resolve, reject) => {
         const child = (0, import_child_process.exec)(
           finalCommand,
@@ -851,8 +859,8 @@ ${userInput}`);
             maxBuffer: 1024 * 1024 * 10,
             env,
             timeout: timeoutMs,
-            shell: isDirectCmdFile
-            // Windows 上直接调用 .cmd/.bat 时需要 shell
+            shell
+            // Use Git Bash if configured, otherwise default shell
           },
           (error, stdout, stderr) => {
             this.currentProcess = null;
@@ -863,6 +871,7 @@ ${userInput}`);
               console.error("  Signal:", error.signal);
               console.error("  Stderr:", stderr);
               console.error("  Stdout:", stdout ? stdout.substring(0, 500) : "(empty)");
+              console.error("  Shell:", typeof shell === "string" ? shell : shell ? "(default)" : "(none)");
               reject(new Error(stderr || error.message));
               return;
             }
@@ -1626,13 +1635,23 @@ function findClaudeBinary(preferredPath) {
   }
   return "";
 }
-function buildEnv(preferredNodePath) {
+function windowsPathToGitBash(windowsPath) {
+  const match = windowsPath.match(/^([A-Za-z]):\\(.*)$/);
+  if (match) {
+    const drive = match[1].toLowerCase();
+    const rest = match[2].replace(/\\/g, "/");
+    return `/${drive}/${rest}`;
+  }
+  return windowsPath.replace(/\\/g, "/");
+}
+function buildEnv(preferredNodePath, gitBashPath) {
   const env = { ...process.env };
   const home = import_os.default.homedir();
   env.HOME = env.HOME || home;
   const nodeBinary = findNodeBinary(preferredNodePath);
   const nodeDir = nodeBinary ? import_path.default.dirname(nodeBinary) : "";
   const isWindows = process.platform === "win32";
+  const usingGitBash = isWindows && gitBashPath && gitBashPath.trim();
   let extra = [];
   if (isWindows) {
     const appData = process.env.APPDATA || import_path.default.join(home, "AppData", "Roaming");
@@ -1664,7 +1683,12 @@ function buildEnv(preferredNodePath) {
   const currentPath = env.PATH || "";
   const parts = currentPath.split(import_path.default.delimiter).filter(Boolean);
   const merged = [...nodeDir ? [nodeDir] : [], ...extra, ...parts];
-  env.PATH = Array.from(new Set(merged)).join(import_path.default.delimiter);
+  if (usingGitBash) {
+    const convertedPaths = Array.from(new Set(merged)).map(windowsPathToGitBash);
+    env.PATH = convertedPaths.join(":");
+  } else {
+    env.PATH = Array.from(new Set(merged)).join(import_path.default.delimiter);
+  }
   return env;
 }
 function resolveClaudeTimeoutMs(env) {
@@ -1827,6 +1851,12 @@ var ClaudeSidebarSettingTab = class extends import_obsidian.PluginSettingTab {
     ).addButton(
       (button) => button.setButtonText(this.plugin.t("pathHelpButton")).onClick(() => {
         new PathHelpModal(this.app, this.plugin).open();
+      })
+    );
+    new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingGitBashPathName")).setDesc(this.plugin.t("settingGitBashPathDesc")).addText(
+      (text) => text.setPlaceholder("C:\\Program Files\\Git\\bin\\bash.exe").setValue(this.plugin.settings.gitBashPath).onChange(async (value) => {
+        this.plugin.settings.gitBashPath = value;
+        await this.plugin.saveSettings();
       })
     );
     new import_obsidian.Setting(containerEl).setName(this.plugin.t("settingDefaultPromptName")).setDesc(this.plugin.t("settingDefaultPromptDesc")).addTextArea(

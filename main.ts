@@ -66,6 +66,9 @@ const I18N = {
     settingNodePathName: "Node path",
     settingNodePathDesc:
       "Node 可执行文件的完整路径（Windows 可填 node.exe）。留空则自动检测。",
+    settingGitBashPathName: "Git Bash path",
+    settingGitBashPathDesc:
+      "Git Bash 可执行文件的完整路径（Windows 使用 shell 执行时需要）。留空则自动检测。",
     pathHelpButton: "帮助",
     pathHelpTitle: "路径帮助",
     pathHelpBody:
@@ -162,6 +165,9 @@ const I18N = {
     settingNodePathName: "Node path",
     settingNodePathDesc:
       "Full path to the Node executable (on Windows, use node.exe). Leave empty to auto-detect.",
+    settingGitBashPathName: "Git Bash path",
+    settingGitBashPathDesc:
+      "Full path to the Git Bash executable (needed for shell execution on Windows). Leave empty to auto-detect.",
     pathHelpButton: "Help",
     pathHelpTitle: "Path Help",
     pathHelpBody:
@@ -277,6 +283,7 @@ interface ClaudeSidebarSettings {
   claudeCommand: string;
   claudePath: string;
   nodePath: string;
+  gitBashPath: string;
   defaultPrompt: string;
   workingDir: string;
   language: Language;
@@ -293,6 +300,7 @@ const DEFAULT_SETTINGS: ClaudeSidebarSettings = {
   claudeCommand: "",
   claudePath: "",
   nodePath: "",
+  gitBashPath: "",
   defaultPrompt:
     "You are Niki AI embedded in Obsidian (powered by Claude Code). Help me edit Markdown notes.\n" +
     "When you propose changes, be explicit and keep the style consistent.",
@@ -1033,7 +1041,8 @@ class ClaudeSidebarView extends ItemView {
 
     const basePath = this.getVaultBasePath();
     const cwd = this.plugin.settings.workingDir.trim() || basePath || undefined;
-    const env = buildEnv(this.plugin.settings.nodePath.trim());
+    const gitBashPath = this.plugin.settings.gitBashPath.trim();
+    const env = buildEnv(this.plugin.settings.nodePath.trim(), gitBashPath);
     const timeoutMs = resolveClaudeTimeoutMs(env);
 
     // Debug logging
@@ -1041,6 +1050,7 @@ class ClaudeSidebarView extends ItemView {
     console.debug("  Configured:", configured || "(empty)");
     console.debug("  Claude path:", preferredClaude || "(auto-detect)");
     console.debug("  Node path:", this.plugin.settings.nodePath.trim() || "(auto-detect)");
+    console.debug("  Git Bash path:", gitBashPath || "(auto-detect/not set)");
     console.debug("  Detected claude:", detectedClaude || "(not found)");
     console.debug("  Normalized:", normalized || "(empty)");
     console.debug("  Working dir:", cwd || "(default)");
@@ -1065,6 +1075,9 @@ class ClaudeSidebarView extends ItemView {
         firstToken.toLowerCase().endsWith(".bat")
       );
 
+      // Determine shell: use Git Bash if configured, otherwise use default (cmd.exe or true)
+      const shell: boolean | string = gitBashPath && isDirectCmdFile ? gitBashPath : isDirectCmdFile;
+
       return new Promise((resolve, reject) => {
         const child = exec(
           finalCommand,
@@ -1073,7 +1086,7 @@ class ClaudeSidebarView extends ItemView {
             maxBuffer: 1024 * 1024 * 10,
             env,
             timeout: timeoutMs,
-            shell: isDirectCmdFile  // Windows 上直接调用 .cmd/.bat 时需要 shell
+            shell: shell  // Use Git Bash if configured, otherwise default shell
           },
           (error, stdout, stderr) => {
             this.currentProcess = null;
@@ -1084,6 +1097,7 @@ class ClaudeSidebarView extends ItemView {
               console.error("  Signal:", error.signal);
               console.error("  Stderr:", stderr);
               console.error("  Stdout:", stdout ? stdout.substring(0, 500) : "(empty)");
+              console.error("  Shell:", typeof shell === "string" ? shell : (shell ? "(default)" : "(none)"));
               reject(new Error(stderr || error.message));
               return;
             }
@@ -1976,7 +1990,26 @@ function findClaudeBinary(preferredPath?: string): string {
   return "";
 }
 
-function buildEnv(preferredNodePath?: string): NodeJS.ProcessEnv {
+/**
+ * Convert Windows path to Git Bash format (e.g., C:\\path\\to\\file → /c/path/to/file)
+ */
+function windowsPathToGitBash(windowsPath: string): string {
+  // Handle drive letter: C:\ → /c/
+  const match = windowsPath.match(/^([A-Za-z]):\\(.*)$/);
+  if (match) {
+    const drive = match[1].toLowerCase();
+    const rest = match[2].replace(/\\/g, "/");
+    return `/${drive}/${rest}`;
+  }
+  // Handle UNC paths or already converted paths
+  return windowsPath.replace(/\\/g, "/");
+}
+
+/**
+ * Build environment variables for command execution.
+ * When gitBashPath is provided on Windows, converts paths to Git Bash format.
+ */
+function buildEnv(preferredNodePath?: string, gitBashPath?: string): NodeJS.ProcessEnv {
   const env = { ...process.env };
   const home = os.homedir();
   env.HOME = env.HOME || home;
@@ -1984,6 +2017,7 @@ function buildEnv(preferredNodePath?: string): NodeJS.ProcessEnv {
   const nodeDir = nodeBinary ? path.dirname(nodeBinary) : "";
 
   const isWindows = process.platform === "win32";
+  const usingGitBash = isWindows && gitBashPath && gitBashPath.trim();
   let extra: string[] = [];
 
   if (isWindows) {
@@ -2019,7 +2053,14 @@ function buildEnv(preferredNodePath?: string): NodeJS.ProcessEnv {
   const currentPath = env.PATH || "";
   const parts = currentPath.split(path.delimiter).filter(Boolean);
   const merged = [...(nodeDir ? [nodeDir] : []), ...extra, ...parts];
-  env.PATH = Array.from(new Set(merged)).join(path.delimiter);
+
+  // When using Git Bash, convert Windows paths to Unix format and use : as separator
+  if (usingGitBash) {
+    const convertedPaths = Array.from(new Set(merged)).map(windowsPathToGitBash);
+    env.PATH = convertedPaths.join(":");
+  } else {
+    env.PATH = Array.from(new Set(merged)).join(path.delimiter);
+  }
   return env;
 }
 
@@ -2242,6 +2283,19 @@ class ClaudeSidebarSettingTab extends PluginSettingTab {
         button.setButtonText(this.plugin.t("pathHelpButton")).onClick(() => {
           new PathHelpModal(this.app, this.plugin).open();
         })
+      );
+
+    new Setting(containerEl)
+      .setName(this.plugin.t("settingGitBashPathName"))
+      .setDesc(this.plugin.t("settingGitBashPathDesc"))
+      .addText((text) =>
+        text
+          .setPlaceholder("C:\\Program Files\\Git\\bin\\bash.exe")
+          .setValue(this.plugin.settings.gitBashPath)
+          .onChange(async (value) => {
+            this.plugin.settings.gitBashPath = value;
+            await this.plugin.saveSettings();
+          })
       );
 
     new Setting(containerEl)
